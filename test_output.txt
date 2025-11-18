@@ -1,0 +1,39 @@
+Launching browser...
+Browser launched and new page opened.
+..All products loaded. Total count: 15
+Found 15 product tiles on the PLP
+Product Name: Gabion Stone 4"-7"
+...Screenshot logged
+F-----.Closing page and browser...
+Browser closed.
+.
+
+Failures:
+
+1) Scenario: Display Quantity Selector Modal with Correct UI Components # Ecomm\features\product-listing-page-validation.feature:26
+   √ Before # Ecomm\features\step_definitions\google.steps.js:5
+   √ Before # Ecomm\features\support\hooks.js:6
+   √ Given I am on the Product Listing Page # Ecomm\features\step_definitions\productListingSteps.js:5
+       Attachment (text/plain): Product Name: Gabion Stone 4"-7"
+   √ When I click on the Qty Selector on the PLP # Ecomm\features\step_definitions\productListingSteps.js:30
+   √ Then I should see a header with value "Select Quantity" # Ecomm\features\step_definitions\productListingSteps.js:77
+   × And I should see a subtext "Select an option or Custom amount" # Ecomm\features\step_definitions\productListingSteps.js:82
+       Attachment (image/png)
+       locator.textContent: Timeout 30000ms exceeded.
+       Call log:
+       [2m  - waiting for locator('p:has-text("Select an option or Custom amount")')[22m
+
+           at ProductListingPage.getQuantitySelectorSubtext (C:\Users\pook\Documents\frameworks\new copy\PlayWrightAutomation\pageobjects\productListingPage.js:341:70)
+           at World.<anonymous> (C:\Users\pook\Documents\frameworks\new copy\PlayWrightAutomation\Ecomm\features\step_definitions\productListingSteps.js:83:40)
+   - And "22 tons" swatch should be highlighted # Ecomm\features\step_definitions\productListingSteps.js:87
+   - And I should see swatches for 5, 10, and 100 tons # Ecomm\features\step_definitions\productListingSteps.js:98
+   - And I should see a field labeled "Enter Custom Quantity" # Ecomm\features\step_definitions\productListingSteps.js:103
+   - And an information tooltip icon should be displayed # Ecomm\features\step_definitions\productListingSteps.js:112
+   - And I should see a Save button and an X button # Ecomm\features\step_definitions\productListingSteps.js:117
+   √ After # Ecomm\features\support\hooks.js:28
+   √ After # Ecomm\features\step_definitions\google.steps.js:12
+
+1 scenario (1 failed)
+9 steps (1 failed, 5 skipped, 3 passed)
+0m52.975s (executing steps: 0m52.937s)
+^C

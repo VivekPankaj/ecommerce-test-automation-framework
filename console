@@ -1,0 +1,31 @@
+...................F---.F-----.
+
+Failures:
+
+1) Scenario: Verify product tile navigation and placeholder handling # Ecomm\features\product-listing-page-validation.feature:37
+   × Before # Ecomm\features\support\hooks.js:6
+       Error: function timed out, ensure the promise resolves within 60000 milliseconds
+           at Timeout.<anonymous> (C:\Users\pook\Documents\frameworks\new copy\PlayWrightAutomation\node_modules\@cucumber\cucumber\lib\time.js:64:20)
+           at listOnTimeout (node:internal/timers:581:17)
+           at process.processTimers (node:internal/timers:519:7)
+   - Given I am on the Product Listing Page # Ecomm\features\step_definitions\productListingSteps.js:5
+   - When I click on a first product # Ecomm\features\step_definitions\productListingSteps.js:123
+   - Then I should be redirected to the corresponding Product Detail Page # Ecomm\features\step_definitions\productListingSteps.js:127
+   √ After # Ecomm\features\support\hooks.js:28
+
+2) Scenario: Verify navigation bar categories display # Ecomm\features\product-listing-page-validation.feature:42
+   × Before # Ecomm\features\support\hooks.js:6
+       Error: function timed out, ensure the promise resolves within 60000 milliseconds
+           at Timeout.<anonymous> (C:\Users\pook\Documents\frameworks\new copy\PlayWrightAutomation\node_modules\@cucumber\cucumber\lib\time.js:64:20)
+           at listOnTimeout (node:internal/timers:581:17)
+           at process.processTimers (node:internal/timers:519:7)
+   - Given I am on the Product Listing Page # Ecomm\features\step_definitions\productListingSteps.js:5
+   - Given I am on PLP or any page # Ecomm\features\step_definitions\productListingSteps.js:132
+   - When I view the navigation bar # Ecomm\features\step_definitions\productListingSteps.js:138
+   - Then all the categories should be displayed # Ecomm\features\step_definitions\productListingSteps.js:142
+   - And the default selection should be "All Products" # Ecomm\features\step_definitions\productListingSteps.js:147
+   √ After # Ecomm\features\support\hooks.js:28
+
+4 scenarios (2 failed, 2 passed)
+23 steps (8 skipped, 15 passed)
+2m27.567s (executing steps: 2m27.455s)

@@ -1,0 +1,8 @@
+node_modules/
+test-results*/
+playwright-report/
+path-to-json-output/
+allure-report/
+allure-results/
+
+.vscode/

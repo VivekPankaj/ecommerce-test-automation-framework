@@ -1,0 +1,102 @@
+[
+  {
+    "description": "  As a customer\n  I want to view product information on the PDP\n  So that I can make informed purchasing decisions",
+    "elements": [
+      {
+        "description": "",
+        "id": "product-display-page-(pdp)-validation;verify-price-attributes-on-product-tile",
+        "keyword": "Scenario",
+        "line": 26,
+        "name": "Verify price attributes on product tile",
+        "steps": [
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "I am on the Product Listing Page",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 27,
+            "name": "I click on a first product",
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 28,
+            "name": "I set quantity to 20 tons on PDP",
+            "match": {
+              "location": "Ecomm\\features\\step_definitions\\productDisplaySteps.js:43"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [
+              {
+                "rows": [
+                  {
+                    "cells": [
+                      "attribute",
+                      "description"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Unit Price",
+                      "Unit Price"
+                    ]
+                  },
+                  {
+                    "cells": [
+                      "Total Material Price",
+                      "Qty selected * Unit Price"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "keyword": "Then ",
+            "line": 29,
+            "name": "I should see the following PRICE attributes for each product title:",
+            "match": {
+              "location": "Ecomm\\features\\step_definitions\\productDisplaySteps.js:54"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@PDP",
+            "line": 25
+          },
+          {
+            "name": "@product-tile-price-validation",
+            "line": 25
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "product-display-page-(pdp)-validation",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Product Display Page (PDP) Validation",
+    "tags": [],
+    "uri": "Ecomm\\features\\product-display-page-validation.feature"
+  }
+]
