@@ -16,9 +16,9 @@ const config = {
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'firefox',
+      name: 'chromium',
       use: {
-        browserName: 'firefox',
+        browserName: 'chromium',
         headless: false,
         screenshot: 'on',
         trace: 'on',

@@ -9,9 +9,17 @@ Given('I am on the Product Listing Page', async function () {
     }
 
     this.plpPage = new ProductListingPage(this.page);
-    // Replace with your actual PLP URL
-    await this.plpPage.navigateToPlp('https://qa-shop.vulcanmaterials.com/category/categories/C001');
+    // Navigate to PLP URL first
+    console.log('Navigating to PLP URL: https://qa-shop.vulcanmaterials.com/category/categories/C001');
+    await this.page.goto('https://qa-shop.vulcanmaterials.com/category/categories/C001');
 
+    // Add address location immediately after page loads
+    await this.plpPage.addAddressLocation('37303');
+
+    // Then wait for product tiles to load (address must be added first for prices to show)
+    console.log('Address added, now waiting for product tiles');
+    await this.plpPage.waitForProductTilesToLoad();
+    console.log('Initial product tiles loaded');
      // Wait for product tiles to load
     await this.plpPage.scrollAndWaitForAllProductsToLoad();
     const tileCount = await this.plpPage.getProductTileCount();
@@ -21,6 +29,11 @@ Given('I am on the Product Listing Page', async function () {
     const productName = await this.plpPage.getProductName();
     console.log(`Product Name: ${productName}`);
     this.attach(`Product Name: ${productName}`, 'text/plain');
+
+ 
+
+
+
 
 });
 
@@ -151,7 +164,17 @@ Then('the default selection should be {string}', async function (expectedDefault
 });
 
 When('I click a category in the navigation bar', async function () {
+     if (!this.plpPage) {
+        this.plpPage = new ProductListingPage(this.page);
+    }
+     await this.page.goto('https://qa-shop.vulcanmaterials.com/category/application/a001');
+
+
     await this.plpPage.clickCategoryInNavigationBar();
+     await this.page.waitForTimeout(1000);
+    //await this.page.pause();  
+
+
 });
 
 Then('the clicked category should be highlighted', async function () {
@@ -239,5 +262,3 @@ Then('I should see the following PRICE attributes for each product on PLP:', asy
     }
     console.log('PRICE attributes verification completed.');
 });
-
-

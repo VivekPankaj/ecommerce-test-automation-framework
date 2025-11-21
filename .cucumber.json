@@ -1,0 +1,15 @@
+{
+  "default": {
+    "paths": [
+      "Ecomm/features/"
+    ],
+    "require": [
+      "Ecomm/features/step_definitions/**/*.js",
+      "Ecomm/features/support/**/*.js"
+    ],
+    "format": [
+      "progress-bar"
+    ],
+    "parallel": 1
+  }
+}

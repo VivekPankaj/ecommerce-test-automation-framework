@@ -1,9 +1,9 @@
 const { expect } = require('@playwright/test');
+const SearchPage = require('./SearchPage');
 
-class ProductListingPage {
+class ProductListingPage extends SearchPage {
     constructor(page) {
-        this.page = page;
-
+        super(page);
 
         //quantity selector
         this.qtySelectorArrow = page.locator('div.flex.items-center.gap-2 > svg.MuiSvgIcon-root >path')
@@ -20,7 +20,7 @@ class ProductListingPage {
         this.unitPrice = 'span[aria-label^="Price per Ton"]';
         this.totalPrice = 'p[aria-label^="Total Price"]';
         this.deliveryPrice = 'p[aria-label^="Delivery Price"]';
-        this.addToCartButton = 'button[aria-label="add to cart"]';
+        this.addToCartButton = 'button[aria-label="Add to Cart"]';
         this.productBadges = '.a-badge-label-inner.a-text-ellipsis';
         this.infoIcon = 'svg.MuiSvgIcon-root.MuiSvgIcon-fontSizeInherit.mui-1cms5u3';
 
@@ -32,16 +32,13 @@ class ProductListingPage {
         this.CustomQuantityValueField = 'input[name=quantity]';
         this.QuantitySelectorSaveButton = 'button[type=submit]>div';
         this.QuantitySelectorCloseButton = 'button[aria-label="close"]';
-        this.ShowPricesForValue='div.component--quantity-selector-button> button > div > p';    
-
-
-
-      
-
-
+        this.ShowPricesForValue='div.component--quantity-selector-button> button > div > p';
+        this.addAddressButtonLocator='button:has-text("Add Address For Exact Price")';
+        this.addLocation='#location-autocomplete';
+        this.addressSubmit='button[type=submit]';
     }
 
-     async clickOnArrow() {
+    async clickOnArrow() {
         console.log('Clicking on Qty Selector arrow');
         await this.qtySelectorArrow.click();
         console.log('Qty Selector arrow clicked');
@@ -150,7 +147,7 @@ class ProductListingPage {
         default:
             console.warn(`⚠ Unknown component: ${component}`);
     }
-}
+    }
 
     async isComponentVisible(component) {
         const productTile = this.productTiles.first();
@@ -228,15 +225,12 @@ class ProductListingPage {
             console.log('Badges available: false');
             return false;
         }
-        // If no badges are present, that's also acceptable as per the scenario
     }
 
-    // Helper method to get product tile count
     async getProductTileCount() {
         return await this.productTiles.count();
     }
 
-    // Method to get product details from a specific tile
     async getProductDetails(tileIndex = 0) {
         const productTile = this.productTiles.nth(tileIndex);
 
@@ -248,7 +242,6 @@ class ProductListingPage {
         };
     }
 
-    // Method to verify all components for a specific product tile
     async verifyAllComponentsForTile(tileIndex = 0) {
         const productTile = this.productTiles.nth(tileIndex);
 
@@ -262,8 +255,7 @@ class ProductListingPage {
         return components;
     }
 
-    // Method to log all components as a list
-    async logAllComponents() {
+    async getLoggingAllComponentsList() {
         console.log('Logging all product tile components:');
         console.log('- component (product tile)');
         console.log('- product name');
@@ -273,21 +265,18 @@ class ProductListingPage {
         console.log('- add to cart');
     }
 
-    // Method to get unit price text
     async getUnitPrice() {
         const productTile = this.productTiles.first();
         const unitPriceElement = productTile.locator(this.unitPrice).first();
         return await unitPriceElement.textContent() || 'Not found';
     }
 
-    // Method to get total price text
     async getTotalPrice() {
         const productTile = this.productTiles.first();
         const totalPriceElement = productTile.locator(this.totalPrice);
         return await totalPriceElement.textContent() || 'Not found';
     }
 
-    // Method to get delivery price text
     async getDeliveryPrice() {
         const productTile = this.productTiles.first();
         const deliveryPriceElement = productTile.locator(this.deliveryPrice);
@@ -295,7 +284,6 @@ class ProductListingPage {
         return deliveryText || 'Free Delivery' || 'Not found';
     }
 
-    // Method to get product name text
     async getProductName() {
         const productTile = this.productTiles.first();
         const productNameElement = productTile.locator(this.productName);
@@ -307,29 +295,25 @@ class ProductListingPage {
         expect(QuantitySelectorHeader).toBeTruthy();
     }
 
-     async verifyQuantitySelectorSubtextDisplayed(){
+    async verifyQuantitySelectorSubtextDisplayed(){
         const QuantitySelectorSubtext= this.QuantitySelectorSubtext.isVisible();
         expect(QuantitySelectorSubtext).toBeTruthy();
     }
-     
+
     async verifyTwentytwoTonswatchHighlighted(){
         const TwentytwoTonswatch = this.page.locator(`p.component--typography.global-text-md-bold:text("22 Tons")`);
         const isVisible = await TwentytwoTonswatch.isVisible();
         expect(isVisible).toBeTruthy();
-
-        // const className = await TwentytwoTonswatch.getAttribute('class');
-        // const isHighlighted = className && (className.includes('selected') || className.includes('active') || className.includes('highlighted'));
-        // expect(isHighlighted).toBeTruthy();
     }
 
-      async verifyAllTonsSwatches(){
+    async verifyAllTonsSwatches(){
         const FiveTonSwatch= this.Tonswatchs.nth(1).isVisible();
         expect(FiveTonSwatch).toBeTruthy();
 
-         const TenTonSwatch= this.Tonswatchs.nth(2).isVisible();
+        const TenTonSwatch= this.Tonswatchs.nth(2).isVisible();
         expect(TenTonSwatch).toBeTruthy();
 
-         const FifteenTonSwatch= this.Tonswatchs.nth(3).isVisible();
+        const FifteenTonSwatch= this.Tonswatchs.nth(3).isVisible();
         expect(FifteenTonSwatch).toBeTruthy();
     }
 
@@ -337,13 +321,13 @@ class ProductListingPage {
         const CustomQuantityTextField= this.CustomQuantityTextField.isVisible();
         expect(CustomQuantityTextField).toBeTruthy();
     }
-    
-     async verifyQuantitySelectorSaveButtonDisplayed(){
+
+    async verifyQuantitySelectorSaveButtonDisplayed(){
         const QuantitySelectorSaveButton= this.QuantitySelectorSaveButton.isVisible();
         expect(QuantitySelectorSaveButton).toBeTruthy();
     }
 
-     async verifyQuantitySelectorCloseButtonDisplayed(){
+    async verifyQuantitySelectorCloseButtonDisplayed(){
         const QuantitySelectorCloseButton= this.QuantitySelectorCloseButton.isVisible();
         expect(QuantitySelectorCloseButton).toBeTruthy();
     }
@@ -365,7 +349,6 @@ class ProductListingPage {
     async isTwentyTwoTonSwatchHighlighted() {
         const swatch = this.page.locator(`p.component--typography.global-text-md-bold:text("22 Tons")`);
         const className = await swatch.getAttribute('class');
-        // Assuming highlighted if it has 'selected' or 'active' class, or different styling
         return className && (className.includes('selected') || className.includes('active') || className.includes('highlighted'));
     }
 
@@ -395,7 +378,6 @@ class ProductListingPage {
 
     async isInformationTooltipIconVisible() {
         console.log('Checking if Information Tooltip Icon is visible in Select Quantity modal');
-        // Information tooltip icon inside Select Quantity modal
         const quantityModal = this.page.locator('div:has(h3:has-text("Select Quantity"))');
         const visible = await quantityModal.locator('svg.MuiSvgIcon-root.MuiSvgIcon-fontSizeInherit').isVisible();
         console.log(`Information Tooltip Icon visible: ${visible}`);
@@ -416,10 +398,9 @@ class ProductListingPage {
         return visible;
     }
 
-    
     async clickFirstProduct() {
         console.log('Clicking on the first product tile');
-        const firstProduct = this.productTiles.nth(0); // first product (index 0)
+        const firstProduct = this.productTiles.nth(0);
         await firstProduct.click();
         console.log('Clicked on first product, waiting for navigation');
         await this.page.waitForLoadState('networkidle');
@@ -428,7 +409,7 @@ class ProductListingPage {
 
     async clickSecondProduct() {
         console.log('Clicking on the second product tile');
-        const secondProduct = this.productTiles.nth(1); // Second product (index 1)
+        const secondProduct = this.productTiles.nth(1);
         await secondProduct.click();
         console.log('Clicked on second product, waiting for navigation');
         await this.page.waitForLoadState('networkidle');
@@ -440,17 +421,14 @@ class ProductListingPage {
         const url = this.page.url();
         console.log(`Current URL: ${url}`);
 
-        // Check if URL contains product path or if we're on a PDP
         const isProductUrl = url.includes('/product/') || url.includes('/Product/');
         console.log(`URL contains product path: ${isProductUrl}`);
 
-        // Additional check: wait for product detail page elements to load
         try {
             await this.page.waitForSelector('.component--product-description-product-overview', { timeout: 10000 });
             console.log('Product detail elements found');
             return true;
         } catch {
-            // If no specific selector found, rely on URL pattern
             if (isProductUrl) {
                 console.log('On PDP based on URL pattern');
                 return true;
@@ -463,13 +441,11 @@ class ProductListingPage {
     async verifyNavigationBarCategoriesDisplayed() {
         console.log('Checking if navigation bar categories are displayed');
 
-        const navBarSelector = 'div[role="navigation"]'; // Generic navigation selector
+        const navBarSelector = 'div[role="navigation"]';
         const navBar = this.page.locator(navBarSelector);
 
-        // Wait for navigation bar to be visible
         await navBar.waitFor({ state: 'visible', timeout: 10000 });
 
-        // Check for category links or menu items
         const categories = await this.page.locator('div[aria-label="product categories"][role="tablist"] > a').all();
         console.log(`Found ${categories.length} navigation categories`);
 
@@ -485,14 +461,13 @@ class ProductListingPage {
 
     async getNavigationBarDefaultSelection() {
         console.log('Getting navigation bar default selection');
-        // Look for active/selected navigation item
         const activeSelector = 'div[aria-label="product categories"] > a[aria-selected="true"]';
         const defaultItem = this.page.locator(activeSelector);
 
         try {
             const text = await defaultItem.first().textContent();
             console.log(`Default selection: ${text?.trim()}`);
-            return text?.trim() || 'All Products'; // Default fallback
+            return text?.trim() || 'All Products';
         } catch {
             console.log('No specific active item found, defaulting to All Products');
             return 'All Products';
@@ -503,12 +478,10 @@ class ProductListingPage {
         console.log('Selecting a category from navigation bar');
         const categoryLinks = this.page.locator('div[aria-label="product categories"][role="tablist"] > a');
 
-        // Get total categories count
         const totalCategories = await categoryLinks.count();
         console.log(`Total categories found: ${totalCategories}`);
 
         if (totalCategories >= 2) {
-            // Click on the second category (index 1, as first is usually "All Products" which is active)
             const secondCategory = categoryLinks.nth(1);
             const categoryName = await secondCategory.textContent();
             console.log(`Clicking category: ${categoryName?.trim()}`);
@@ -525,21 +498,18 @@ class ProductListingPage {
     async verifyCategoryHighlighted() {
         console.log('Verifying that a category is highlighted');
         const activeSelector = 'div[aria-label="product categories"] > a[aria-selected="true"]';
-        const isHighlighted = await this.page.locator(activeSelector).first().isVisible();
+        const isHighlighted = await this.page.locator(activeSelector).isVisible();
         console.log(`Category highlight present: ${isHighlighted}`);
         return isHighlighted;
     }
 
     async verifyCategoryProductsLoaded() {
         console.log('Verifying that category products are loaded');
-        // Wait for page navigation and content to update
         await this.page.waitForLoadState('networkidle');
-        await this.page.waitForTimeout(2000); // Additional wait for content update
+        await this.page.waitForTimeout(2000);
 
-        // Check if products are loading or already loaded
         await this.waitForProductTilesToLoad();
 
-        // Verify we have products displayed
         const productCount = await this.getProductTileCount();
         const url = this.page.url();
         console.log(`URL after category selection: ${url}`);
@@ -548,8 +518,41 @@ class ProductListingPage {
         return productCount > 0;
     }
 
-   
+    async addAddressLocation(zipCode) {
+        console.log('⭐⭐⭐ STARTING addAddressLocation method ⭐⭐⭐');
+        console.log('ZIP code:', zipCode);
 
+        console.log('1. Checking if Add Address button is visible...');
+        const addAddressButton = this.page.locator(this.addAddressButtonLocator);
+        const isVisible = await addAddressButton.isVisible().catch(() => false);
+
+        if (!isVisible) {
+            console.log('❌ Add Address button is NOT visible! Clicking anyway...');
+            await addAddressButton.click().catch(e => console.log('Error clicking invis button:', e.message));
+        } else {
+            console.log('✓ Add Address button is visible, clicking it...');
+            await addAddressButton.click().catch(e => console.log('Click failed:', e.message));
+            console.log('✓ Add Address button clicked');
+        }
+
+        console.log('2. Checking if location autocomplete field is visible...');
+        const locationField = this.page.locator(this.addLocation);
+        await locationField.waitFor({ state: 'visible', timeout: 10000 }).catch(() => console.log('Location field timeout'));
+        console.log('✓ Location field found, clicking and typing...');
+        await locationField.click().catch(() => console.log('Click failed'));
+        await locationField.type(zipCode).catch(() => console.log('Type failed'));
+        await this.page.keyboard.press('Enter');
+        console.log('✓ Typed ZIP code and pressed Enter:', zipCode);
+
+        console.log('3. Checking if submit button is visible...');
+        const submitButton = this.page.locator(this.addressSubmit);
+        await submitButton.waitFor({ state: 'visible', timeout: 10000 }).catch(() => console.log('Submit button timeout'));
+        console.log('✓ Submit button found, clicking it...');
+        await submitButton.click().catch(() => console.log('Submit click failed'));
+        console.log('✓ Submit button clicked');
+
+        console.log(' COMPLETED addAddressLocation for zip code: ${zipCode}');
+    }
 }
 
 module.exports = ProductListingPage;

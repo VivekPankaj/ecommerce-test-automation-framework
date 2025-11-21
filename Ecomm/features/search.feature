@@ -15,7 +15,7 @@ Feature: Search Page Validation
   Scenario: Search result page reflects input
     Given I enter a valid search term "BAS" and press Enter
     Then I should be navigated to the SRP
-    And the header should display "Results for" and the search keyword "BASE"
+    And the header should display "Results for" and the search keyword "BAS"
 
   @Sanity @PLP @SearchSuggestions1 @Sprint4
   Scenario: Search suggestions not appear for two letter search term
