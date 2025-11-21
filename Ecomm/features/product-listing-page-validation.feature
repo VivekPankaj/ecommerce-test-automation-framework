@@ -3,12 +3,10 @@ Feature: Product Listing Page (PLP) Validation
   I want to view product information on the PLP
   So that I can make informed purchasing decisions
 
-  Background:
-    Given I am on the Product Listing Page
-
   @Sanity @PLP @product-tile-validation
   Scenario: Complete product tile validation
-    When I view a product tile of PLP page
+    Given I am on the Product Listing Page
+    Given I am on the Product Listing Page
     Then I should see the following components for first product:
       | component         |
       | product name      |
@@ -25,6 +23,7 @@ Feature: Product Listing Page (PLP) Validation
 
   @Sanity @PLP @QuantitySelectorModalValidation @Sprint4
   Scenario: Display Quantity Selector Modal with Correct UI Components
+  Given I am on the Product Listing Page
     When I click on the Qty Selector on the PLP
     Then I should see a header with value "Select Quantity"
     And I should see a subtext "Select an option or enter a custom amount"
@@ -35,6 +34,7 @@ Feature: Product Listing Page (PLP) Validation
 
   @Sanity @PLP @QuantitySelectorFunctionality @Sprint4
   Scenario: Quantity Selector functionality
+  Given I am on the Product Listing Page
     When I click on the Qty Selector on the PLP
     Then I update the quantity in Enter Custom Quantity field to 40
     And I click on Save button
@@ -46,6 +46,7 @@ Feature: Product Listing Page (PLP) Validation
 
   @Sanity @PLP @Navigation
   Scenario: Verify product tile navigation and placeholder handling
+  Given I am on the Product Listing Page
     When I click on a first product
     Then I should be redirected to the corresponding Product Detail Page
 
@@ -60,5 +61,3 @@ Feature: Product Listing Page (PLP) Validation
     When I click a category in the navigation bar
     Then the clicked category should be highlighted
     Then the total count of products in the category should be displayed
-
- 

@@ -60,7 +60,7 @@ Feature: Product Display Page (PDP) Validation
   Scenario: Verify price attributes on product tile
     When I click on a first product
     When I set quantity to 1001 tons on PDP
-    Then I should see a validation message "Quantity must be between 1 and 1000."
+    Then I should see a validation message "Quantity must be between 1 and 1000"
 
   @Sanity @PDP @QuantitySelector @Sprint4
   Scenario: Verify price attributes on product tile

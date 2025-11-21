@@ -6,14 +6,26 @@ setDefaultTimeout(120 * 1000); // Increased to 120 seconds to allow more time fo
 Before(async function () {
     // This hook will be executed before all scenarios
 
-    const browserName = process.env.BROWSER || 'firefox';  // Set Chromium as default browser
-    const browserType = { chromium, firefox, webkit }[browserName] || firefox;
+    const browserName = process.env.BROWSER || 'chromium';  // Set Chromium as default browser
+    const browserType = { chromium, firefox, webkit }[browserName] || chromium;
     this.browser = await browserType.launch({
       headless: false,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-web-security']  // Added args to prevent common timeout issues
     });
-    const context = await this.browser.newContext();
-    this.page =  await context.newPage();
+    // Create a browser context with a fixed geolocation so tests that depend on location
+    // behave consistently. We also pre-grant geolocation permission for the AUT origin
+    // to prevent the browser permission popup from appearing.
+    const context = await this.browser.newContext({
+      geolocation: { latitude: 39.8283, longitude: -98.5795 }, // center of US by default
+      // viewport, locale, etc. can be added here if needed
+    });
+
+    // Ensure a clean permissions state then explicitly grant geolocation for the AUT origin.
+    await context.clearPermissions();
+    const origin = process.env.TEST_AUT_ORIGIN || 'https://qa-shop.vulcanmaterials.com';
+    await context.grantPermissions(['geolocation'], { origin });
+
+    this.page = await context.newPage();
   });
 
   AfterStep( async function ({result}) {

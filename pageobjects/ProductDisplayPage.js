@@ -255,7 +255,7 @@ class ProductDisplayPage {
 
     async clickDeliveryInfoButton() {
         console.log('Clicking on delivery info button');
-        await this.page.locator(this.deliveryInfoButton).click();
+        await this.page.locator(this.deliveryInfoButton).nth(1).click();
         // Wait for tooltip to appear
         await this.page.waitForTimeout(500);
         console.log('Delivery info button clicked');
