@@ -58,6 +58,7 @@ Feature: Product Listing Page (PLP) Validation
 
   @Sanity @PLP @CategorySelection
   Scenario: Verify category selection and product display
+  Given I am on the Product Listing Page
     When I click a category in the navigation bar
     Then the clicked category should be highlighted
     Then the total count of products in the category should be displayed
