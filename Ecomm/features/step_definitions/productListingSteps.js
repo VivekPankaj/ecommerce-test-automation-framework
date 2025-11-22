@@ -154,6 +154,11 @@ When('I view the navigation bar', async function () {
 });
 
 Then('all the categories should be displayed', async function () {
+    if (!this.plpPage) {
+        this.plpPage = new ProductListingPage(this.page);
+    }
+     await this.page.goto('https://qa-shop.vulcanmaterials.com/category/application/a001');
+
     const categoriesVisible = await this.plpPage.verifyNavigationBarCategoriesDisplayed();
     expect(categoriesVisible).toBe(true);
 });
