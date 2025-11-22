@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18.x' # recommended; can revert to 14.x if required
+          node-version: '20'   # Updated to meet Cucumber requirements
 
       - name: Install dependencies
         run: npm ci
@@ -25,7 +25,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Cucumber tests
-        run: npx cucumber-js Ecomm/features/
+        run: npx cucumber-js --config .cucumber.json
 
       - uses: actions/upload-artifact@v4
         if: always()
