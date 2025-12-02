@@ -126,6 +126,8 @@ npx cucumber-js Ecomm/features --require Ecomm/features/step_definitions --requi
 ```
 
 ## Project Structure
+
+```
 vulcan_ecomm_storefront_automation/
 │
 ├── Ecomm/                              # BDD Test Suite (Cucumber)
