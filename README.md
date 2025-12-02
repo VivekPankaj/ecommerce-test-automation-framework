@@ -206,23 +206,6 @@ vulcan_ecomm_storefront_automation/
 
 ---
 
-## Available Scripts
-
-| Script | Command | Purpose |
-|--------|---------|---------|
-| `test` | `npx cucumber-js --config .cucumber.json` | Run all Cucumber tests |
-| `regression` | `npx playwright test --grep @Web` | Run full Playwright regression suite |
-| `webTests` | `npx playwright test --grep @Web` | Run Web-tagged tests |
-| `APITests` | `npx playwright test --grep @API` | Run API-tagged tests |
-| `SafariNewConfig` | `npx playwright test --config playwright.config.js --project=safari` | Run Safari-specific tests |
-
-Run scripts with:
-```bash
-npm run <script-name>
-```
-
----
-
 ## Environment Configuration
 
 ### Default Settings
