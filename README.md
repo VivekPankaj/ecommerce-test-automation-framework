@@ -286,11 +286,11 @@ Test artifacts are automatically captured:
 
 | Scenario | Description | Tags |
 |----------|-------------|------|
-| Search result page displays search input correctly | Verify search term appears in results page | `@Sanity`, `@Search`, `@Sprint4` |
-| Search suggestions appear for 3+ character terms | Validate suggestion dropdown for valid input | `@SearchSuggestions`, `@Sprint4` |
-| Search suggestions do not appear for 2-character terms | Verify no suggestions for short input | `@SearchSuggestions`, `@Sprint4` |
-| Verify category suggestions navigation | Test category selection from suggestions | `@SearchSuggestions`, `@Sprint4` |
-| No results message for invalid search terms | Validate "no results" handling | `@Search`, `@PLP`, `@Sprint4` |
+| Search result page displays search input correctly | Verify search term appears in results page | `@Sanity`, `@Search`|
+| Search suggestions appear for 3+ character terms | Validate suggestion dropdown for valid input | `@SearchSuggestions` |
+| Search suggestions do not appear for 2-character terms | Verify no suggestions for short input | `@SearchSuggestions` |
+| Verify category suggestions navigation | Test category selection from suggestions | `@SearchSuggestions` |
+| No results message for invalid search terms | Validate "no results" handling | `@Search`, `@PLP` |
 
 **Coverage:** Search input validation, suggestion system, result display, error handling
 
@@ -301,14 +301,14 @@ Test artifacts are automatically captured:
 
 | Scenario | Description | Tags |
 |----------|-------------|------|
-| Complete product tile validation | Verify all elements: name, details, thumbnail, add to cart, info CTA | `@Sanity`, `@product-tile-validation`, `@Sprint4` |
-| Unit price, total price, delivery price display | Validate pricing information accuracy | `@PLP`, `@product-tile-validation`, `@Sprint4` |
-| Badge visibility on product tiles | Verify badges appear correctly | `@PLP`, `@product-tile-validation`, `@Sprint4` |
-| Quantity selector modal validation | Test quantity input modal UI and functionality | `@QuantitySelector`, `@Sprint4` |
-| Quantity selector custom quantity input | Verify custom quantity entry and validation | `@QuantitySelector`, `@Sprint4` |
-| Product navigation from product tiles | Test product tile click navigation to PDP | `@PLP`, `@Navigation`, `@Sprint4` |
-| Navigation bar and category selection | Verify category filter navigation | `@Navigation`, `@Sprint4` |
-| Category filtering with product counts | Validate filtering logic and count display | `@PLP`, `@Sprint4` |
+| Complete product tile validation | Verify all elements: name, details, thumbnail, add to cart, info CTA | `@Sanity`, `@product-tile-validation` |
+| Unit price, total price, delivery price display | Validate pricing information accuracy | `@PLP`, `@product-tile-validation` |
+| Badge visibility on product tiles | Verify badges appear correctly | `@PLP`, `@product-tile-validation`|
+| Quantity selector modal validation | Test quantity input modal UI and functionality | `@QuantitySelector` |
+| Quantity selector custom quantity input | Verify custom quantity entry and validation | `@QuantitySelector` |
+| Product navigation from product tiles | Test product tile click navigation to PDP | `@PLP`, `@Navigation`|
+| Navigation bar and category selection | Verify category filter navigation | `@Navigation` |
+| Category filtering with product counts | Validate filtering logic and count display | `@PLP` |
 
 **Coverage:** Product tile components, pricing, badges, quantity selector, filtering, navigation
 
@@ -319,12 +319,12 @@ Test artifacts are automatically captured:
 
 | Scenario | Description | Tags |
 |----------|-------------|------|
-| Complete product details visibility | Verify all details: pricing, add to cart, images, etc. | `@Sanity`, `@product-tile-validation`, `@Sprint4` |
-| Price attribute validation | Test unit price and total material price accuracy | `@PDP`, `@product-tile-validation`, `@Sprint4` |
-| Quantity calculator functionality | Validate width/length/thickness calculations | `@QuantitySelector`, `@Sprint4` |
-| Quantity validation range (1-1000 tons) | Verify valid quantity range enforcement | `@QuantitySelector`, `@Sprint4` |
-| Input validation (numeric values only) | Test numeric-only input enforcement | `@QuantitySelector`, `@Sprint4` |
-| Delivery charges tooltip information | Verify delivery information display | `@PDP`, `@Sprint4` |
+| Complete product details visibility | Verify all details: pricing, add to cart, images, etc. | `@Sanity`, `@product-tile-validation` |
+| Price attribute validation | Test unit price and total material price accuracy | `@PDP`, `@product-tile-validation` |
+| Quantity calculator functionality | Validate width/length/thickness calculations | `@QuantitySelector` |
+| Quantity validation range (1-1000 tons) | Verify valid quantity range enforcement | `@QuantitySelector` |
+| Input validation (numeric values only) | Test numeric-only input enforcement | `@QuantitySelector` |
+| Delivery charges tooltip information | Verify delivery information display | `@PDP` |
 
 **Coverage:** Product details display, price calculations, quantity validation, delivery information
 
@@ -337,7 +337,7 @@ Test artifacts are automatically captured:
 | **Search.feature** | 5 | Search input, suggestions, results, no-results handling | `@Search`, `@SearchSuggestions`, `@PLP` |
 | **ProductListing.feature** | 8 | Product tiles, pricing, badges, quantity selector, filtering, navigation | `@PLP`, `@product-tile-validation`, `@QuantitySelector`, `@Navigation` |
 | **ProductDisplay.feature** | 6 | Product details, pricing, quantity calculation, validation, delivery info | `@PDP`, `@product-tile-validation`, `@QuantitySelector` |
-| **Total** | **19+** | Complete user journey from search to product details | `@Sanity`, `@Sprint4` |
+| **Total** | **19+** | Complete user journey from search to product details | `@Sanity`|
 
 
 ## Troubleshooting
