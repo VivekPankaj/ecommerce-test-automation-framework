@@ -1,28 +1,48 @@
 class LoginPage {
 
-constructor(page)
-{
-    this.page = page;
-    this.signInbutton= page.locator("#submit");
-    this.userName = page.locator("#username");
-    this.password = page.locator("#password");
+    constructor(page) {
+        this.page = page;
+
+        this.signInHeaderBtn = page.locator('span:has-text("Sign In")');
+        this.emailInput = page.locator('input[name="email"]');
+        this.passwordInput = page.locator('input[name="password"]');
+        this.signInSubmitBtn = page.locator('button:has-text("Sign In")');
+
+        this.myAccountBtn = page.locator('span:has-text("my account")');
+        this.signOutBtn = page.locator('button:has-text("Sign Out")');
+    }
+
+    async goTo() {
+        await this.page.goto("https://qa-shop.vulcanmaterials.com/");
+        await this.page.waitForLoadState("networkidle");
+    }
+
+    async clickSignInCTA() {
+        await this.signInHeaderBtn.click();
+    }
+
+    async enterEmail(email) {
+        await this.emailInput.fill(email);
+    }
+
+    async enterPassword(password) {
+        await this.passwordInput.fill(password);
+    }
+
+    async submitLogin() {
+        await this.signInSubmitBtn.click();
+        await this.page.waitForLoadState("networkidle");
+    }
+
+    async openMyAccount() {
+        await this.myAccountBtn.click();
+    }
+
+    async signOut() {
+        await this.signOutBtn.click();
+        await this.page.waitForLoadState("networkidle");
+    }
 
 }
 
-async goTo()
-{
-    await this.page.goto("https://practicetestautomation.com/practice-test-login/");
-    await this.page.waitForLoadState('networkidle');
-}
-
-async validLogin(username,password)
-{
-    await  this.userName.fill(username);
-     await this.password.fill(password);
-     await this.signInbutton.click();
-     await this.page.waitForLoadState('networkidle');
-
-}
-
-}
-module.exports = {LoginPage};
+module.exports = { LoginPage };
