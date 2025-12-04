@@ -1,6 +1,6 @@
 # Vulcan E-Commerce Storefront Automation
 
-Automated testing framework for Vulcan Materials e-commerce storefront using **Playwright** and **Cucumber BDD**. This project implements behavior-driven development (BDD) testing for comprehensive validation of login,logout,product search, listing, and display, quarry selector functionality.
+Automated testing framework for Vulcan Materials e-commerce storefront using **Playwright** and **Cucumber BDD**. This project implements behavior-driven development (BDD) testing for comprehensive validation of login, logout, product search, listing, display and quarry selector functionality.
 
 **Repository:** [vulcan_ecomm_storefront_automation](https://github.com/Vulcan-Materials/vulcan_ecomm_storefront_automation)  
 **Target Application:** https://qa-shop.vulcanmaterials.com
