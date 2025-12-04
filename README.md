@@ -1,6 +1,6 @@
 # Vulcan E-Commerce Storefront Automation
 
-Automated testing framework for Vulcan Materials e-commerce storefront using **Playwright** and **Cucumber BDD**. This project implements behavior-driven development (BDD) testing for comprehensive validation of product search, listing, and display functionality.
+Automated testing framework for Vulcan Materials e-commerce storefront using **Playwright** and **Cucumber BDD**. This project implements behavior-driven development (BDD) testing for comprehensive validation of login,logout,product search, listing, and display, quarry selector functionality.
 
 **Repository:** [vulcan_ecomm_storefront_automation](https://github.com/Vulcan-Materials/vulcan_ecomm_storefront_automation)  
 **Target Application:** https://qa-shop.vulcanmaterials.com
@@ -135,10 +135,14 @@ vulcan_ecomm_storefront_automation/
 │       ├── Search.feature              # Search functionality tests
 │       ├── ProductListing.feature      # Product listing page (PLP) tests
 │       ├── ProductDisplay.feature      # Product display page (PDP) tests
+|       ├── login.feature               # Login page tests
+|       ├── QuarrySelector.feature     # Quarry address selector page tests
 │       ├── step_definitions/           # Cucumber step implementations
 │       │   ├── searchSteps.js
 │       │   ├── productListingSteps.js
 │       │   └── productDisplaySteps.js
+│       │   ├── loginSteps.js
+│       │   └── quarrySelectorSteps.js
 │       └── support/
 │           └── hooks.js                # Browser setup, screenshots, cleanup
 │
@@ -147,6 +151,8 @@ vulcan_ecomm_storefront_automation/
 │   ├── SearchPage.js                   # Search page interactions
 │   ├── ProductListingPage.js           # Product listing page (PLP) interactions
 │   └── ProductDisplayPage.js           # Product display page (PDP) interactions
+│   ├── LoginPage.js                    # Login page (PLP) interactions
+│   └── QuarrySelectorPage.js           # Quarry selector page (PDP) interactions
 │
 ├── utils/                              # Utilities & Test Data
 │   ├── test-base.js                    # Test configuration & base setup
@@ -330,6 +336,28 @@ Test artifacts are automatically captured:
 
 ---
 
+### 4. LoginPage.feature
+**Purpose:** Validate Login Page Sign in,Sign out functionality
+
+| Scenario | Description | Tags |
+|----------|-------------|------|
+| Login Page Validation | Verify Sign in, Sign out functionality |  `@SignIn` ,`@SignOut`  |
+
+**Coverage:** Sign in,Sign out
+
+---
+
+### 5. QuarrySelectorPage.feature
+**Purpose:** Quarry Address Selector Modal Validation
+
+| Scenario | Description | Tags |
+|----------|-------------|------|
+| Quarry Address Selector Modal Validation | select or change address to validate pricing and delivery availability |  `@Sanity` ,`@Quarry`  |
+
+**Coverage:** Validate all components in the Address Selector modal and validate default placeholder when no zipcode is saved
+
+---
+
 ## Coverage Summary
 
 | Feature | Test Scenarios | Focus Areas | Tags |
@@ -337,7 +365,9 @@ Test artifacts are automatically captured:
 | **Search.feature** | 5 | Search input, suggestions, results, no-results handling | `@Search`, `@SearchSuggestions`, `@PLP` |
 | **ProductListing.feature** | 8 | Product tiles, pricing, badges, quantity selector, filtering, navigation | `@PLP`, `@product-tile-validation`, `@QuantitySelector`, `@Navigation` |
 | **ProductDisplay.feature** | 6 | Product details, pricing, quantity calculation, validation, delivery info | `@PDP`, `@product-tile-validation`, `@QuantitySelector` |
-| **Total** | **19+** | Complete user journey from search to product details | `@Sanity`|
+| **Login.feature** | 2 | Validate successful user login,log out | `@SignIn`, `@SignOut` |
+| **Quarry-selector-page-validation.feature** | 3 | Validate all components in the Address Selector modal and validate default placeholder when no zipcode is saved| `@Sanity`, `@Quarry` |
+| **Total** | **24+** | Complete user journey from search to product details | `@Sanity`|
 
 
 ## Troubleshooting
