@@ -8,7 +8,7 @@ class LoginPage {
         this.passwordInput = page.locator('input[name="password"]');
         this.signInSubmitBtn = page.locator('button:has-text("Sign In")');
 
-        this.myAccountBtn = page.locator('span:has-text("my account")');
+        this.myAccountBtn = page.locator('span:has-text("My Account")');
         this.signOutBtn = page.locator('button:has-text("Sign Out")');
     }
 
@@ -31,7 +31,7 @@ class LoginPage {
 
     async submitLogin() {
         await this.signInSubmitBtn.click();
-        await this.page.waitForLoadState("networkidle");
+        // await this.page.waitForLoadState("networkidle");
     }
 
     async openMyAccount() {

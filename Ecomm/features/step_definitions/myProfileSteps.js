@@ -1,19 +1,25 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { MyProfilePage } = require('../../../pageobjects/MyProfilePage');
+const {LoginPage} = require('../../../pageobjects/LoginPage');
 
 let myProfilePage;
+let loginPage;
+
 
 Given('I am on My Profile page', async function () {
-  myProfilePage = new MyProfilePage(this.page);
-  await myProfilePage.clickMyAccount();
+	loginPage = new LoginPage(this.page);
+	myProfilePage = new MyProfilePage(this.page);
+	await this.page.goto('https://qa-shop.vulcanmaterials.com/');
+	await loginPage.clickSignInCTA();
+	await loginPage.enterEmail('vivekpankaj@gmail.com');
+	await loginPage.enterPassword('S@p1ent2014');
+	await loginPage.submitLogin();
+  await loginPage.openMyAccount()
   await myProfilePage.clickMyProfile();
 });
 
 
 
-When('I click on My Profile', async function () {
-  await myProfilePage.clickMyProfile();
-});
 
 When('I click the Edit button in Personal Info section', async function () {
   await myProfilePage.clickEditPersonalInfo();
@@ -36,5 +42,50 @@ When('I save the profile', async function () {
 });
 
 Then('I should see profile updated successfully', async function () {
-  await expect(myProfilePage.successToast).toBeVisible();
+  await myProfilePage.isProfileUpdated();
 });
+
+
+When('I click the Edit button in Company Info section', async function () {
+  await myProfilePage.clickEditCompanyInfo();
+});
+
+When('I update Company Name {string}', async function (name) {
+  await myProfilePage.updateCompanyName(name);
+});
+
+When('I update Company Phone {string}', async function (phone) {
+  await myProfilePage.updateCompanyPhone(phone);
+});
+
+When('I update Company Address {string}', async function (address) {
+  await myProfilePage.updateCompanyAddress(address);
+});
+
+When('I save the company info', async function () {
+  await myProfilePage.saveCompanyInfo();
+});
+
+Then('I should see company info updated successfully', async function () {
+  await myProfilePage.isProfileUpdated();
+});
+
+
+When('I click on Edit Login Info', async function () {
+  await myProfilePage.clickEditLoginInfo();
+});
+
+When('I fill current password {string}', async function (password) {
+  await myProfilePage.updateCurrentPassword(password);});
+
+When('I fill new password {string}', async function (password) {
+  await myProfilePage.updateNewPassword(password);
+});
+
+
+When('I click the Cancel button', async function () {
+  await myProfilePage.cancelLoginInfoUpdate();
+});
+
+
+
