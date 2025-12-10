@@ -1,6 +1,8 @@
 # Vulcan E-Commerce Storefront Automation
 
+
 Automated testing framework for Vulcan Materials e-commerce storefront using **Playwright** and **Cucumber BDD**. This project implements behavior-driven development (BDD) testing for comprehensive validation of login, logout, product search, listing, display and quarry selector functionality.
+
 
 **Repository:** [vulcan_ecomm_storefront_automation](https://github.com/Vulcan-Materials/vulcan_ecomm_storefront_automation)  
 **Target Application:** https://qa-shop.vulcanmaterials.com
@@ -336,6 +338,7 @@ Test artifacts are automatically captured:
 
 ---
 
+
 ### 4. LoginPage.feature
 **Purpose:** Validate Login Page Sign in,Sign out functionality
 
@@ -358,6 +361,7 @@ Test artifacts are automatically captured:
 
 ---
 
+
 ## Coverage Summary
 
 | Feature | Test Scenarios | Focus Areas | Tags |
@@ -365,9 +369,11 @@ Test artifacts are automatically captured:
 | **Search.feature** | 5 | Search input, suggestions, results, no-results handling | `@Search`, `@SearchSuggestions`, `@PLP` |
 | **ProductListing.feature** | 8 | Product tiles, pricing, badges, quantity selector, filtering, navigation | `@PLP`, `@product-tile-validation`, `@QuantitySelector`, `@Navigation` |
 | **ProductDisplay.feature** | 6 | Product details, pricing, quantity calculation, validation, delivery info | `@PDP`, `@product-tile-validation`, `@QuantitySelector` |
+
 | **Login.feature** | 2 | Validate successful user login,log out | `@SignIn`, `@SignOut` |
 | **Quarry-selector-page-validation.feature** | 3 | Validate all components in the Address Selector modal and validate default placeholder when no zipcode is saved| `@Sanity`, `@Quarry` |
 | **Total** | **24+** | Complete user journey from search to product details | `@Sanity`|
+
 
 
 ## Troubleshooting
@@ -430,4 +436,6 @@ Tests run automatically on code changes. Check status in the **Actions** tab.
 
 **Last Updated:** December 2, 2025  
 **Node Version Required:** v20+  
+
 **Test Framework:** Playwright + Cucumber BDD
+

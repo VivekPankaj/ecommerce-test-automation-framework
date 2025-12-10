@@ -7,15 +7,15 @@ Feature: Login Page Validation
   Background:
     Given I navigate to the Vulcan Shop application
 
-  @SignIn
+  @SignIn @Sanity
   Scenario: Validate successful user login
     When I click on the Sign In button
     And I enter email "abcd@gmail.com"
     And I enter password "abcdABCD@1"
     And I submit the Sign In form
-    Then I should see "Welcome, Ataf"
+    Then I should be logged in succesfully
 
-  @SignOut
+  @SignOut @Sanity
   Scenario: Validate successful user logout
     When I click on the Sign In button
     And I enter email "abcd@gmail.com"
@@ -23,4 +23,4 @@ Feature: Login Page Validation
     And I submit the Sign In form
     And I click on My Account
     And I click on Sign Out
-    Then I should see "Welcome,"
+    Then I should be signed out successfully
