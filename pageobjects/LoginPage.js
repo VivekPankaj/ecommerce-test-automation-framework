@@ -43,6 +43,14 @@ class LoginPage {
         await this.page.waitForLoadState("networkidle");
     }
 
+    async isSignInButtonVisible() {
+        return await this.signInHeaderBtn.isVisible();
+    }
+
+    async isMyAccountVisible() {
+        return await this.myAccountBtn.isVisible();
+    }   
+
 }
 
 module.exports = { LoginPage };

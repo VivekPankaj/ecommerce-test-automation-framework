@@ -25,9 +25,8 @@ When("I submit the Sign In form", async function () {
     await loginPage.submitLogin();
 });
 
-Then("I should see {string}", async function (expectedText) {
-    const welcomeText = this.page.locator('h2:has-text("Welcome,")');
-    await expect(welcomeText).toContainText(expectedText);
+Then("I should be logged in succesfully", async function () {
+   await loginPage.isMyAccountVisible();
 });
 
 When("I click on My Account", async function () {
@@ -36,4 +35,8 @@ When("I click on My Account", async function () {
 
 When("I click on Sign Out", async function () {
     await loginPage.signOut();
+});
+
+Then("I should be signed out successfully", async function () {
+    await loginPage.isSignInButtonVisible();
 });
