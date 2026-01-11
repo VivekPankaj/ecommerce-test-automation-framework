@@ -1,5 +1,6 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { QuarrySelectorPage } = require('../../../pageobjects/QuarrySelectorPage');
+const testData = require("../../../utils/testData.json");
 
 Given('I am on the Address Selector', async function () {
     this.quarryPage = new QuarrySelectorPage(this.page);
@@ -11,7 +12,24 @@ When('the Modal is displayed', async function () {
     await this.quarryPage.waitForAddressModal();
 });
 
-// NEW FLOW STEPS
+// Data-driven steps
+When('I enter primary zipcode in the Address Input Field', async function () {
+    await this.quarryPage.enterAddress(testData.quarrySelector.zipCodes.primary);
+});
+
+When('I enter secondary zipcode in the Address Input Field', async function () {
+    await this.quarryPage.enterAddress(testData.quarrySelector.zipCodes.secondary);
+});
+
+Then('I should see the Address Input Field with primary zipcode', async function () {
+    await this.quarryPage.verifyAddressInputField(testData.quarrySelector.zipCodes.primary);
+});
+
+Then('I should see the Address Input Field with no zipcode', async function () {
+    await this.quarryPage.verifyAddressInputField(null);
+});
+
+// Original parameterized steps (kept for backward compatibility)
 When('I enter {string} in the Address Input Field', async function (zip) {
     await this.quarryPage.enterAddress(zip);
 });

@@ -6,7 +6,7 @@ Feature: Product Display Page (PDP) Validation
   Background:
     Given I am on the Product Listing Page
 
-  @Sanity @PDP @product-tile-validation @Sprint4
+  @Locked @Sanity @PDP @P1 @product-tile-validation
   Scenario: Complete product details page validation
     When I click on a first product
     Then I should be redirected to the corresponding Product Detail Page
@@ -21,33 +21,32 @@ Feature: Product Display Page (PDP) Validation
       | enter custom quantity field |
       | Product overview            |
 
-  @Sanity @PDP @product-tile-price-validation @Sprint4
-  Scenario: Verify price attributes on product tile
+  @Locked @Sanity @PDP @P1 @product-tile-price-validation
+  Scenario: Verify price attributes on product tile with valid quantity
     When I click on a first product
-    When I set quantity to 45 tons on PDP
+    When I set valid quantity on PDP
     Then I should see the following PRICE attributes for each product title:
       | attribute            | description               |
       | Unit Price           | Unit Price                |
       | Total Material Price | Qty selected * Unit Price |
 
-  @Sanity @PDP @quantityCalculatorValidation @Sprint4
-  Scenario: Verify quantity calculator functionality
+  @Locked @Sanity @PDP @P1 @quantityCalculatorValidation
+  Scenario: Verify quantity calculator functionality with dimensions set 1
     When I click on a first product
     And I click on Estimate quantity link
-    And i enter width,length,thickness as 80,100,10
+    And I enter calculator dimensions set 1
     And i click on calculate button
-    Then i see the text "Estimated materials needed"
+    Then I see the estimated materials needed text
     And i see the calulated material needed in tons
     And calculated value matches with calculated material needed in yards
 
-
-  @Sanity @PDP @quantityCalculatorValidation1 @Sprint4
-  Scenario: Verify quantity calculator functionality
+  @Locked @Sanity @PDP @P2 @quantityCalculatorValidation1
+  Scenario: Verify quantity calculator functionality with dimensions set 2 in feet
     When I click on a first product
     And I click on Estimate quantity link
-    And i enter width,length,thickness as 8,10,10 all in feet
+    And I enter calculator dimensions set 2 in feet
     And i click on calculate button
-    Then i see the text "Estimated materials needed"
+    Then I see the estimated materials needed text
     And i see the calulated material needed in tons
     And calculated value matches with calculated material needed in yards
     Then calculated tons value should be updated with custom quantity field
@@ -55,21 +54,46 @@ Feature: Product Display Page (PDP) Validation
     Then custom quantity field should be updated with apply estimate tons value
     Then total material price should be unit price times custom quantity field value
 
-
-  @Sanity @PDP @QuantitySelector @Sprint4
-  Scenario: Verify price attributes on product tile
+  @Locked @Sanity @PDP @P2 @QuantitySelector
+  Scenario: Verify max quantity validation message
     When I click on a first product
-    When I set quantity to 1001 tons on PDP
-    Then I should see a validation message "Quantity must be between 1 and 1000"
+    When I set max exceeded quantity on PDP
+    Then I should see quantity range validation message
 
-  @Sanity @PDP @QuantitySelector @Sprint4
-  Scenario: Verify price attributes on product tile
+  @Locked @Sanity @PDP @P2 @QuantitySelector
+  Scenario: Verify invalid text quantity validation message
     When I click on a first product
-    When I set quantity to "test" tons on PDP
-    Then I should see a validation message "Please enter a valid number."
+    When I set invalid text quantity on PDP
+    Then I should see invalid number validation message
 
-  @Sanity @PDP @DeliveryInfoTooltip @Sprint4
-  Scenario: Verify price attributes on product tile
+  @Locked @Sanity @PDP @P2 @DeliveryInfoTooltip
+  Scenario: Verify delivery charges tooltip message
     When I click on a first product
     When i click on delivery charges Info
-    Then i should see tooltip message "Delivery charges are for per load (22 tons). Charges are same for up to 22 tons"
+    Then I should see the delivery charges tooltip message
+
+  # Pickup Mode Scenarios for PDP
+  # Note: Pickup scenarios use their own Given step to skip delivery address setup
+
+  @Locked @Sanity @PDP @P1 @Pickup
+  Scenario: Verify PDP does not show delivery charges when Pickup mode is selected
+    Given I am on the Product Listing Page for Pickup
+    When I switch to Pickup mode
+    And I click on a first product
+    Then I should not see delivery charges section on PDP
+    And the price should show only material cost without delivery
+
+  @Locked @Sanity @PDP @P2 @Pickup
+  Scenario: Verify PDP shows Pickup location in header
+    Given I am on the Product Listing Page for Pickup
+    When I switch to Pickup mode
+    And I click on a first product
+    Then the header should display Pickup with facility address
+
+  @Locked @Sanity @PDP @P2 @Pickup
+  Scenario: Verify quantity changes in Pickup mode calculate correctly
+    Given I am on the Product Listing Page for Pickup
+    When I switch to Pickup mode
+    And I click on a first product
+    And I adjust the quantity using plus icon
+    Then the total price should reflect material cost only

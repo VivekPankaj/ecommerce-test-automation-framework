@@ -15,11 +15,76 @@ class SearchPage {
         this.categoriesSuggestions='h4:has-text("CATEGORIES")';
     }
 
+    async closeBlockingModals() {
+        try {
+            // Try multiple strategies to close any blocking modal dialogs
+            const closeStrategies = [
+                // Strategy 1: Close button with CloseIcon
+                async () => {
+                    const closeBtn = this.page.locator('[data-testid="CloseIcon"]').first();
+                    if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+                        await closeBtn.click();
+                        console.log('✓ Closed blocking modal dialog via CloseIcon');
+                        return true;
+                    }
+                    return false;
+                },
+                // Strategy 2: Close button in dialog
+                async () => {
+                    const closeBtn = this.page.locator('.MuiDialog-root button[aria-label="close"], .MuiDialog-root .MuiIconButton-root').first();
+                    if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+                        await closeBtn.click();
+                        console.log('✓ Closed blocking modal dialog via close button');
+                        return true;
+                    }
+                    return false;
+                },
+                // Strategy 3: Press Escape key
+                async () => {
+                    const dialog = this.page.locator('.MuiDialog-root').first();
+                    if (await dialog.isVisible({ timeout: 1000 }).catch(() => false)) {
+                        await this.page.keyboard.press('Escape');
+                        await this.page.waitForTimeout(500);
+                        console.log('✓ Closed blocking modal via Escape key');
+                        return true;
+                    }
+                    return false;
+                }
+            ];
+
+            for (const strategy of closeStrategies) {
+                if (await strategy()) {
+                    await this.page.waitForTimeout(500);
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.log('No blocking modal to close or error:', error.message);
+            return false;
+        }
+    }
+
    async enterSearchTerm(searchTerm) {
         console.log(`Entering search term: ${searchTerm}`);
 
+        // Close any blocking modals first - try multiple times with waits
+        for (let i = 0; i < 3; i++) {
+            const closed = await this.closeBlockingModals();
+            if (closed) {
+                await this.page.waitForTimeout(500); // Wait for modal animation
+            }
+        }
+
+        // Wait for any modal to fully disappear
+        try {
+            await this.page.waitForSelector('div[data-testid="dialog"]', { state: 'hidden', timeout: 5000 });
+        } catch (e) {
+            // Modal may not exist, that's fine
+        }
+
         // Wait for search button and click to open search
-        await this.page.locator('.component--app-header-search-button>button').click();
+        await this.page.locator('.component--app-header-search-button>button').click({ force: true });
 
         // Wait for search input field to be visible and interactable
         await this.page.waitForSelector('input[placeholder*="Search"]', { timeout: 10000 });
@@ -112,6 +177,10 @@ class SearchPage {
 
     async enterSearchTermWithoutEnter(searchTerm) {
         console.log(`Entering search term without submitting: ${searchTerm}`);
+
+        // Close any blocking modals first
+        await this.closeBlockingModals();
+        await this.closeBlockingModals(); // Try twice in case of multiple modals
 
        // Wait for search button and click to open search
         await this.page.locator('.component--app-header-search-button>button').click();
@@ -290,6 +359,208 @@ class SearchPage {
         await expect(noResultsMessage).toBeVisible();
         console.log('No results found message is displayed');
         return true;
+    }
+
+    // ============================================================================
+    // NEW METHODS FOR SEARCH FEATURE (11 Jan 2026)
+    // ============================================================================
+
+    async openSearchAndType(text) {
+        try {
+            await this.closeBlockingModals();
+            await this.closeBlockingModals();
+            
+            await this.page.locator('.component--app-header-search-button>button').click();
+            await this.page.waitForSelector('input[placeholder*="Search"]', { timeout: 10000 });
+            await this.page.fill('input[placeholder*="Search"]', text);
+            await this.page.waitForTimeout(500);
+        } catch (error) {
+            throw new Error(`Failed to open search and type: ${error.message}`);
+        }
+    }
+
+    async clearAndType(text) {
+        try {
+            await this.page.fill('input[placeholder*="Search"]', '');
+            await this.page.fill('input[placeholder*="Search"]', text);
+            // Wait longer for autocomplete suggestions to appear
+            await this.page.waitForTimeout(2000);
+        } catch (error) {
+            throw new Error(`Failed to clear and type: ${error.message}`);
+        }
+    }
+
+    async hasSearchResults() {
+        try {
+            // Check for product tiles or results indication
+            const hasProducts = await this.page.locator('[class*="product-tile"], [class*="ProductTile"]').first().isVisible({ timeout: 3000 }).catch(() => false);
+            const hasResultsFor = await this.page.locator('text=/Results for/i').first().isVisible({ timeout: 2000 }).catch(() => false);
+            const hasItems = await this.page.locator('text=/\\d+ items?/i').first().isVisible({ timeout: 2000 }).catch(() => false);
+            
+            return hasProducts || hasResultsFor || hasItems;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async resultsContainKeyword(keyword) {
+        try {
+            const pageText = await this.page.locator('body').innerText();
+            return pageText.toLowerCase().includes(keyword.toLowerCase());
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async hasResultCount() {
+        try {
+            const countElement = await this.page.locator('text=/\\d+ items?|\\d+ results?|\\d+ products?/i').first();
+            return await countElement.isVisible({ timeout: 2000 }).catch(() => false);
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async getResultCount() {
+        try {
+            const countElement = await this.page.locator('text=/\\d+ items?|\\d+ results?|\\d+ products?/i').first();
+            const text = await countElement.textContent();
+            const match = text.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        } catch (error) {
+            return 0;
+        }
+    }
+
+    async hasNoResultsMessage() {
+        try {
+            const noResults = await this.page.locator('text=/no results|no products found|sorry.*no/i').first();
+            return await noResults.isVisible({ timeout: 2000 }).catch(() => false);
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async hasErrorMessage() {
+        try {
+            const error = await this.page.locator('text=/error|something went wrong|500|404/i').first();
+            return await error.isVisible({ timeout: 1000 }).catch(() => false);
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async hasAutocompleteSuggestions() {
+        try {
+            const products = await this.page.locator(this.productsSuggestions).isVisible({ timeout: 2000 }).catch(() => false);
+            const categories = await this.page.locator(this.categoriesSuggestions).isVisible({ timeout: 2000 }).catch(() => false);
+            return products || categories;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async hasProductSuggestions() {
+        try {
+            return await this.page.locator(this.productsSuggestions).isVisible({ timeout: 2000 }).catch(() => false);
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async hasCategorySuggestions() {
+        try {
+            return await this.page.locator(this.categoriesSuggestions).isVisible({ timeout: 2000 }).catch(() => false);
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async clickFirstSuggestion() {
+        try {
+            await this.page.waitForTimeout(500);
+            // Try product suggestion first, then category
+            const productSuggestion = this.page.locator('ul:nth-child(1) > a').first();
+            if (await productSuggestion.isVisible({ timeout: 1000 }).catch(() => false)) {
+                await productSuggestion.click();
+            } else {
+                const categorySuggestion = this.page.locator('ul:nth-child(2) > a').first();
+                await categorySuggestion.click();
+            }
+            await this.page.waitForLoadState('networkidle');
+        } catch (error) {
+            throw new Error(`Failed to click first suggestion: ${error.message}`);
+        }
+    }
+
+    async clickFirstSearchResult() {
+        try {
+            await this.closeBlockingModals();
+            const firstProduct = this.page.locator('[class*="product-tile"] a, [class*="ProductTile"] a').first();
+            await firstProduct.click();
+            await this.page.waitForLoadState('networkidle');
+        } catch (error) {
+            throw new Error(`Failed to click first search result: ${error.message}`);
+        }
+    }
+
+    async navigateToPLP() {
+        try {
+            await this.closeBlockingModals();
+            await this.closeBlockingModals();
+            
+            // Navigate to PLP - try clicking "Shop by Categories" or direct navigation
+            const shopByCategories = this.page.locator('text=/Shop by Categories/i').first();
+            if (await shopByCategories.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await shopByCategories.click();
+                await this.page.waitForTimeout(1000);
+                // Click first category
+                const firstCategory = this.page.locator('[class*="category"] a, [class*="menu"] a').first();
+                if (await firstCategory.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await firstCategory.click();
+                }
+            } else {
+                // Direct navigation fallback
+                const baseUrl = this.page.url().split('/').slice(0, 3).join('/');
+                await this.page.goto(`${baseUrl}/category/all-products`);
+            }
+            await this.page.waitForLoadState('networkidle');
+        } catch (error) {
+            console.log(`PLP navigation warning: ${error.message}`);
+        }
+    }
+
+    async navigateToPDP() {
+        try {
+            await this.navigateToPLP();
+            await this.clickFirstSearchResult();
+        } catch (error) {
+            console.log(`PDP navigation warning: ${error.message}`);
+        }
+    }
+
+    async navigateToCart() {
+        try {
+            await this.closeBlockingModals();
+            const cartIcon = this.page.locator('[class*="cart"], [aria-label*="cart" i]').first();
+            await cartIcon.click();
+            await this.page.waitForLoadState('networkidle');
+        } catch (error) {
+            console.log(`Cart navigation warning: ${error.message}`);
+        }
+    }
+
+    async typeInSearchBox(text) {
+        try {
+            const searchInput = this.page.locator('input[placeholder*="Search"]');
+            if (await searchInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await searchInput.fill(text);
+            } else {
+                await this.openSearchAndType(text);
+            }
+        } catch (error) {
+            throw new Error(`Failed to type in search box: ${error.message}`);
+        }
     }
 }
 

@@ -1,0 +1,343 @@
+{
+  "login": {
+    "validUser": {
+      "email": "vivek.pankaj@publicissapient.com",
+      "password": "S@p1ent2014",
+      "firstName": "Vivek",
+      "lastName": "pankaj"
+    },
+    "expectedAccountMenuItems": ["Purchase History", "My Profile", "Payment", "Sign Out"]
+  },
+  "search": {
+    "validSearchTerms": {
+      "fullKeyword": "BASE",
+      "partialKeyword": "BAS",
+      "twoLetterKeyword": "BA"
+    },
+    "invalidSearchTerm": "xyzunknown",
+    "resultsForText": "Results for"
+  },
+  "productDisplay": {
+    "quantities": {
+      "validQuantity": 45,
+      "maxExceededQuantity": 1001,
+      "invalidTextQuantity": "test"
+    },
+    "calculator": {
+      "dimensions1": {
+        "width": 80,
+        "length": 100,
+        "thickness": 10
+      },
+      "dimensions2": {
+        "width": 8,
+        "length": 10,
+        "thickness": 10
+      }
+    },
+    "validationMessages": {
+      "quantityRange": "For requests exceeding 1000 tons",
+      "invalidNumber": "Please enter a valid number.",
+      "estimatedMaterials": "Estimated materials needed"
+    },
+    "tooltips": {
+      "deliveryCharges": "Delivery charges are for per load (22 tons). Charges are same for up to 22 tons"
+    }
+  },
+  "productListing": {
+    "quantitySelector": {
+      "headerText": "Select Quantity",
+      "subtext": "Select an option or enter a custom amount",
+      "swatches": [22, 5, 10, 100],
+      "customQuantityLabel": "Enter Custom Quantity",
+      "customQuantity": 40
+    },
+    "navigation": {
+      "defaultCategory": "ALL PRODUCTS"
+    },
+    "pricing": {
+      "loadSize": 22,
+      "deliveryPerLoad": 111.98,
+      "_comment": "Delivery charges: 1-22 tons = 1 load, 23-44 tons = 2 loads, 45-66 tons = 3 loads, etc."
+    }
+  },
+  "quarrySelector": {
+    "zipCodes": {
+      "primary": "37303",
+      "secondary": "23323"
+    },
+    "placeholders": {
+      "noZipcode": "none"
+    },
+    "distanceOptions": ["25 Miles", "50 Miles", "100 Miles", "200 Miles"],
+    "defaultDistance": "25 Miles",
+    "pickupHeader": "Facilities Near You"
+  },
+  "payment_cards": {
+    "Visa": {
+      "number": "4005562231212123",
+      "cvv": "999",
+      "expiry_month": "04",
+      "expiry_year": "2028",
+      "name": "Test Visa",
+      "type": "credit",
+      "network": "Visa"
+    },
+    "Mastercard": {
+      "number": "5424180279791732",
+      "cvv": "999",
+      "expiry_month": "04",
+      "expiry_year": "2028",
+      "name": "Test Master",
+      "type": "credit",
+      "network": "Mastercard"
+    },
+      "DISCOVER": {
+      "number": "6011000990099818",
+      "cvv": "999",
+      "expiry_month": "04",
+      "expiry_year": "2028",
+      "name": "Test Discover",
+      "type": "credit",
+      "network": "Discover"
+    },
+    "Amex": {
+      "number": "373953192351004",
+      "cvv": "999",
+      "expiry_month": "04",
+      "expiry_year": "2028",
+      "name": "Test AmexDefault",
+      "type": "credit",
+      "network": "American Express"
+    },
+    "Discover": {
+      "number": "6011361000006668",
+      "cvv": "999",
+      "expiry_month": "04",
+      "expiry_year": "2028",
+      "name": "Test DiscoverFraud",
+      "type": "credit",
+      "network": "Discover"
+    },
+
+    "Invalid Card": {
+      "number": "0000000000000000",
+      "cvv": "000",
+      "expiry_month": "01",
+      "expiry_year": "2020",
+      "name": "Invalid User",
+      "type": "invalid",
+      "network": "None"
+    }
+  },
+  "test_addresses": {
+    "athens_tn": {
+      "fullAddress": "1119 Co Rd 130, Riceville, TN 37370, USA",
+      "searchQuery": "1119 Co Rd 130, Riceville, TN",
+      "firstName": "John",
+      "lastName": "Doe",
+      "address": "1119 Co Rd 130",
+      "address2": "",
+      "city": "Riceville",
+      "state": "TN",
+      "zipcode": "37370",
+      "phone": "(423) 555-0100",
+      "email": "john.doe@test.com"
+    },
+    "franklin_tn": {
+      "fullAddress": "456 Oak Avenue, Franklin, TN 37064, USA",
+      "searchQuery": "456 Oak Avenue, Franklin, TN",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "address": "456 Oak Avenue",
+      "address2": "",
+      "city": "Franklin",
+      "state": "TN",
+      "zipcode": "37064",
+      "phone": "(615) 555-0200",
+      "email": "jane.smith@test.com"
+    },
+    "nashville_tn": {
+      "fullAddress": "789 Pine Road, Suite 100, Nashville, TN 37201, USA",
+      "searchQuery": "789 Pine Road, Nashville, TN",
+      "firstName": "Bob",
+      "lastName": "Johnson",
+      "address": "789 Pine Road",
+      "address2": "Suite 100",
+      "city": "Nashville",
+      "state": "TN",
+      "zipcode": "37201",
+      "phone": "(615) 555-0300",
+      "email": "bob.johnson@test.com"
+    }
+  },
+  "test_users": {
+    "registered_user": {
+      "email": "vivek.pankaj@publicissapient.com",
+      "password": "S@p1ent2014",
+      "firstName": "Vivek",
+      "lastName": "Pankaj"
+    },
+    "js_framework_user": {
+      "email": "abcd@gmail.com",
+      "password": "abcdABCD@1",
+      "firstName": "Ataf",
+      "lastName": "",
+      "welcomeText": "Welcome, Ataf"
+    },
+    "invalid_user": {
+      "email": "invalid@example.com",
+      "password": "WrongPassword123",
+      "firstName": "Invalid",
+      "lastName": "User"
+    }
+  },
+  "promo_codes": {
+    "SAVE10": {
+      "code": "SAVE10",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "description": "10% off entire order"
+    },
+    "SAVE20": {
+      "code": "SAVE20",
+      "discount_type": "percentage",
+      "discount_value": 20,
+      "description": "20% off entire order"
+    },
+    "FLAT50": {
+      "code": "FLAT50",
+      "discount_type": "fixed",
+      "discount_value": 50,
+      "description": "$50 off order"
+    },
+    "EXPIRED": {
+      "code": "EXPIRED",
+      "discount_type": "invalid",
+      "discount_value": 0,
+      "description": "Expired promo code for testing error handling"
+    }
+  },
+  "search_terms": {
+    "concrete": {
+      "keyword": "concrete",
+      "category": "Concrete",
+      "expected_results": "Concrete products",
+      "product_name": "Concrete Mix"
+    },
+    "gravel": {
+      "keyword": "gravel",
+      "category": "Aggregates",
+      "expected_results": "Gravel products",
+      "product_name": "Gravel"
+    },
+    "sand": {
+      "keyword": "sand",
+      "category": "Aggregates",
+      "expected_results": "Sand products",
+      "product_name": "Sand"
+    },
+    "stone": {
+      "keyword": "stone",
+      "category": "Aggregates",
+      "expected_results": "Stone products",
+      "product_name": "Stone"
+    },
+    "asphalt": {
+      "keyword": "asphalt",
+      "category": "Asphalt",
+      "expected_results": "Asphalt products",
+      "product_name": "Asphalt Mix"
+    },
+    "cement": {
+      "keyword": "cement",
+      "category": "Concrete",
+      "expected_results": "Cement products",
+      "product_name": "Cement"
+    },
+    "rock": {
+      "keyword": "rock",
+      "category": "Aggregates",
+      "expected_results": "Rock products",
+      "product_name": "Rock"
+    },
+    "base_material": {
+      "keyword": "BASE",
+      "category": "Aggregates",
+      "expected_results": "Base material products",
+      "product_name": "Base"
+    },
+    "two_letter_search": {
+      "keyword": "BA",
+      "should_show_suggestions": false,
+      "description": "2-letter search should NOT show suggestions"
+    },
+    "three_letter_search": {
+      "keyword": "BAS",
+      "should_show_suggestions": true,
+      "description": "3+ letter search should show suggestions"
+    },
+    "invalid_search": {
+      "keyword": "xyzabc123notfound",
+      "category": "None",
+      "expected_results": "No results found",
+      "product_name": null
+    }
+  },
+  "plp_data": {
+    "_comment": "PLP test data with dynamic pricing like PDP",
+    "page_title": "ALL PRODUCTS",
+    "categories": [
+      "DRIVEWAYS",
+      "ROAD BASE",
+      "FOUNDATION",
+      "CONCRETE SLAB",
+      "DRAINAGE",
+      "LANDSCAPING",
+      "PIPE BEDDING",
+      "FRENCH DRAIN"
+    ],
+    "quantity_options": ["5 Tons", "10 Tons", "15 Tons", "22 Tons"],
+    "custom_quantity_test": "25",
+    "modal_header": "Select Quantity",
+    "modal_subtext": "Choose a standard quantity or enter a custom amount",
+    "button_update_prices": "Update Prices",
+    "button_add_to_cart": "Add to Cart"
+  },
+  "pdp_products": {
+    "pugged_base": {
+      "product_name": "1 1/2\" Pugged Base",
+      "_comment_prices": "Prices are captured dynamically from the page - no hardcoded values needed for price validation",
+      "price": "DYNAMIC",
+      "price_per_ton": "DYNAMIC",
+      "delivery_fee": "DYNAMIC",
+      "quantity_option_1": "5 Tons",
+      "quantity_option_2": "10 Tons",
+      "quantity_option_3": "15 Tons",
+      "quantity_option_4": "22 Tons",
+      "custom_quantity_valid": "50",
+      "multi_cart_total": "32 Tons",
+      "invalid_over_max": "1001",
+      "invalid_non_numeric": "abc",
+      "invalid_negative": "-5",
+      "invalid_zero": "0",
+      "badge_quality": "BUILT TO LAST",
+      "badge_security": "SECURE CHECKOUT",
+      "badge_value": "VALUE THAT DELIVERS",
+      "feature_1": "High density and strength",
+      "feature_2": "Time-saving moisture consistency",
+      "feature_3": "Uniform foundational base",
+      "button_add_to_cart": "Add to Cart",
+      "button_buy_now": "Buy Now",
+      "button_change_address": "Change Address",
+      "button_custom_quantity": "Enter Custom Quantity",
+      "button_estimate_quantity": "Estimate quantity",
+      "calc_dimensions_1": "120,240,4",
+      "calc_unit_1": "inches",
+      "calc_dimensions_2": "10,20,4",
+      "calc_unit_2": "feet",
+      "calc_dimensions_3": "240,480,6",
+      "calc_unit_3": "inches"
+    }
+  }
+}

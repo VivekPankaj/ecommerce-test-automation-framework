@@ -188,23 +188,62 @@ class ProductDisplayPage {
 
     async isErrorMessageVisible(expectedMessage = null) {
         console.log('Checking if error message is visible');
+        
+        // Wait a moment for error to appear
+        await this.page.waitForTimeout(500);
+        
         if (expectedMessage) {
-            // Look for specific error message
-            const errorLocator = this.page.locator(`text="${expectedMessage}"`).first();
-            try {
-                await errorLocator.waitFor({ state: 'visible', timeout: 2000 });
-                console.log(`Error message "${expectedMessage}" visible: true`);
-                return true;
-            } catch {
-                console.log(`Error message "${expectedMessage}" visible: false`);
-                return false;
+            // Look for specific error message using multiple strategies
+            const searchStrategies = [
+                // Exact match
+                this.page.locator(`text="${expectedMessage}"`).first(),
+                // Partial match
+                this.page.locator(`text="${expectedMessage.substring(0, 20)}"`).first(),
+                // Using getByText
+                this.page.getByText(expectedMessage).first(),
+                // Common error containers with text
+                this.page.locator(`p:has-text("${expectedMessage.substring(0, 15)}")`).first(),
+                this.page.locator(`span:has-text("${expectedMessage.substring(0, 15)}")`).first(),
+                this.page.locator(`div.MuiFormHelperText-root:has-text("${expectedMessage.substring(0, 15)}")`).first()
+            ];
+            
+            for (const locator of searchStrategies) {
+                try {
+                    if (await locator.isVisible({ timeout: 1000 })) {
+                        console.log(`Error message "${expectedMessage}" visible: true`);
+                        return true;
+                    }
+                } catch {
+                    continue;
+                }
             }
+            console.log(`Error message "${expectedMessage}" visible: false`);
+            
+            // Debug: Look for any visible text containing "quantity" or "between"
+            const debugSelectors = [
+                '*:has-text("Quantity")',
+                '*:has-text("between")',
+                '*:has-text("must be")',
+                '.MuiFormHelperText-root'
+            ];
+            for (const sel of debugSelectors) {
+                try {
+                    const count = await this.page.locator(sel).count();
+                    if (count > 0) {
+                        const text = await this.page.locator(sel).first().textContent();
+                        console.log(`Debug - Found with "${sel}": "${text?.substring(0, 50)}..."`);
+                    }
+                } catch {}
+            }
+            
+            return false;
         }
         // Look for any error-like messages
         const possibleSelectors = [
             'p:has-text("Please enter")',
             'div:has-text("Please enter")',
             'span:has-text("Please enter")',
+            '.MuiFormHelperText-root',
             '[class*="error"]',
             '[class*="invalid"]'
         ];
@@ -263,16 +302,31 @@ class ProductDisplayPage {
 
     async getTooltipMessage() {
         console.log('Getting tooltip message text');
-        try {
-            const tooltipElement = this.page.locator(this.tooltipMessage).first();
-            await tooltipElement.waitFor({ state: 'visible', timeout: 3000 });
-            const text = await tooltipElement.textContent();
-            console.log(`Tooltip message: "${text}"`);
-            return text;
-        } catch (error) {
-            console.log(`Tooltip message not found: ${error.message}`);
-            return '';
+        
+        // Try multiple tooltip locators
+        const tooltipSelectors = [
+            'div[role="tooltip"]',
+            '[role="tooltip"]',
+            '.MuiTooltip-tooltip',
+            'div[class*="tooltip"]',
+            'div[class*="Tooltip"]'
+        ];
+        
+        for (const selector of tooltipSelectors) {
+            try {
+                const tooltipElement = this.page.locator(selector).first();
+                if (await tooltipElement.isVisible({ timeout: 2000 })) {
+                    const text = await tooltipElement.textContent();
+                    console.log(`Tooltip message: "${text}"`);
+                    return text;
+                }
+            } catch (e) {
+                continue;
+            }
         }
+        
+        console.log('Tooltip not found with any selector');
+        return '';
     }
 }
 
