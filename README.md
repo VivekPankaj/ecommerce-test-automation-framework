@@ -291,7 +291,7 @@ Test artifacts are automatically captured:
 
 > **🔒 LOCKED Scenarios:** Verified and stable - do not modify without approval  
 > **Last Updated:** 12 January 2026  
-> **Total Scenarios:** 50 | **Locked:** 25
+> **Total Scenarios:** 50 | **Locked:** 40
 
 ---
 
@@ -311,9 +311,9 @@ Test artifacts are automatically captured:
 
 ---
 
-### 2. My Account Module (`my-account.feature`)
+### 2. My Account Module (`my-account.feature`) 🔒 LOCKED
 **Purpose:** Validate My Account sections after user login  
-**Status:** ✅ Ready | 12 scenarios
+**Status:** ✅ Verified | 12 scenarios
 
 | # | Scenario | Tags | Priority |
 |---|----------|------|----------|
@@ -334,9 +334,9 @@ Test artifacts are automatically captured:
 
 ---
 
-### 3. Search Module (`search.feature`)
+### 3. Search Module (`search.feature`) 🔒 LOCKED
 **Purpose:** Validate search functionality and autocomplete  
-**Status:** ✅ Ready | 10 scenarios
+**Status:** ✅ Verified | 10 scenarios
 
 | # | Scenario | Tags | Priority |
 |---|----------|------|----------|
@@ -428,14 +428,14 @@ Test artifacts are automatically captured:
 | Module | Feature File | Scenarios | P1 | P2 | P3 | Status |
 |--------|--------------|-----------|----|----|----|----|
 | **Login** | `login.feature` | 5 | 2 | 3 | - | 🔒 Locked |
-| **My Account** | `my-account.feature` | 12 | 5 | 7 | - | ✅ Ready |
-| **Search** | `search.feature` | 10 | 2 | 4 | 4 | ✅ Ready |
+| **My Account** | `my-account.feature` | 12 | 5 | 7 | - | 🔒 Locked |
+| **Search** | `search.feature` | 10 | 2 | 4 | 4 | 🔒 Locked |
 | **Quarry Selector** | `quarry-selector-page-validation.feature` | 3 | - | - | - | ✅ Ready |
 | **PLP (Delivery)** | `product-listing-page-validation.feature` | 6 | 3 | 3 | - | 🔒 Locked |
 | **PLP (Pickup)** | `product-listing-page-validation.feature` | 4 | 3 | 1 | - | 🔒 Locked |
 | **PDP (Delivery)** | `product-display-page-validation.feature` | 7 | 3 | 4 | - | 🔒 Locked |
 | **PDP (Pickup)** | `product-display-page-validation.feature` | 3 | 1 | 2 | - | 🔒 Locked |
-| **TOTAL** | | **50** | **19** | **24** | **4** | |
+| **TOTAL** | | **50** | **19** | **24** | **4** | **40 Locked** |
 
 ---
 
