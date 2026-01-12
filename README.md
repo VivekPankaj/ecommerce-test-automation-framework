@@ -291,7 +291,7 @@ Test artifacts are automatically captured:
 
 > **🔒 LOCKED Scenarios:** Verified and stable - do not modify without approval  
 > **Last Updated:** 12 January 2026  
-> **Total Scenarios:** 50 | **Locked:** 40
+> **Total Scenarios:** 124 | **Locked:** 43 (Login: 5, PLP: 12, PDP: 10, Quarry: 3, Search: 10, Add to Cart: 3)
 
 ---
 
@@ -467,7 +467,7 @@ Test artifacts are automatically captured:
 | 15 | Different products increases cart count | `@Sanity @P1 @CartBehavior @DifferentProducts` | P1 |
 | 16 | Validate prices across all screens | `@P1 @CartBehavior @PriceValidation` | P1 |
 
-#### Remove from Cart Scenarios (3)
+#### Remove from Cart Scenarios (3) 🔒 LOCKED
 
 | # | Scenario | Tags | Priority |
 |---|----------|------|----------|
@@ -493,8 +493,7 @@ Test artifacts are automatically captured:
 
 **Coverage:** All entry points, Guest/Registered users, Delivery/Pickup modes, Cart confirmation slider, Order Summary validation, Remove functionality, Quantity updates
 
-**Known Issues:**
-- Remove from cart modal click needs refinement
+**Test Status:** 14/29 scenarios passing
 
 ---
 
