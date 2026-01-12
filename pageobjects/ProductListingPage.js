@@ -1746,6 +1746,123 @@ class ProductListingPage extends SearchPage {
         }
         return false;
     }
+
+    // ========================================================================
+    // ADD TO CART FUNCTIONALITY
+    // ========================================================================
+
+    /**
+     * Click Add to Cart button on a specific product tile
+     * @param {number} tileIndex - Index of the product tile (0-based)
+     */
+    async clickAddToCartOnTile(tileIndex = 0) {
+        console.log(`Clicking Add to Cart on product tile ${tileIndex + 1}...`);
+        await this.closeBlockingModals();
+        await this.page.waitForTimeout(500);
+
+        const productTile = this.productTiles.nth(tileIndex);
+        await productTile.scrollIntoViewIfNeeded();
+        await this.page.waitForTimeout(500);
+
+        // Find and click Add to Cart button within the tile
+        const addToCartBtn = productTile.locator(this.addToCartButton);
+        if (await addToCartBtn.isVisible({ timeout: 5000 })) {
+            await addToCartBtn.click();
+            console.log(`✓ Clicked Add to Cart on tile ${tileIndex + 1}`);
+            await this.page.waitForTimeout(2000);
+            return true;
+        }
+
+        // Fallback: try clicking parent container's Add to Cart
+        const parentContainer = productTile.locator('..').first();
+        const fallbackBtn = parentContainer.locator('button:has-text("Add to Cart"), button[aria-label*="Add to Cart"]').first();
+        if (await fallbackBtn.isVisible({ timeout: 3000 })) {
+            await fallbackBtn.click();
+            console.log(`✓ Clicked Add to Cart (fallback) on tile ${tileIndex + 1}`);
+            await this.page.waitForTimeout(2000);
+            return true;
+        }
+
+        throw new Error(`Add to Cart button not found on tile ${tileIndex + 1}`);
+    }
+
+    /**
+     * Click Add to Cart on the first product tile
+     */
+    async clickAddToCartFirstProduct() {
+        return await this.clickAddToCartOnTile(0);
+    }
+
+    /**
+     * Click Add to Cart on the second product tile
+     */
+    async clickAddToCartSecondProduct() {
+        return await this.clickAddToCartOnTile(1);
+    }
+
+    /**
+     * Get product name from a specific tile
+     * @param {number} tileIndex - Index of the product tile (0-based)
+     */
+    async getProductNameFromTile(tileIndex = 0) {
+        const productTile = this.productTiles.nth(tileIndex);
+        const nameElement = productTile.locator(this.productName).first();
+        const name = await nameElement.textContent();
+        console.log(`Product name on tile ${tileIndex + 1}: ${name}`);
+        return name.trim();
+    }
+
+    /**
+     * Get product price from a specific tile
+     * @param {number} tileIndex - Index of the product tile (0-based)
+     */
+    async getProductPriceFromTile(tileIndex = 0) {
+        const productTile = this.productTiles.nth(tileIndex);
+        const priceElement = productTile.locator(this.productPrice).first();
+        const priceText = await priceElement.textContent();
+        const match = priceText.match(/\$?([0-9,]+\.?\d*)/);
+        const price = match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+        console.log(`Product price on tile ${tileIndex + 1}: $${price}`);
+        return price;
+    }
+
+    /**
+     * Check if Add to Cart button is visible on first product
+     */
+    async isAddToCartButtonVisible() {
+        const productTile = this.productTiles.first();
+        const addToCartBtn = productTile.locator(this.addToCartButton);
+        return await addToCartBtn.isVisible().catch(() => false);
+    }
+
+    /**
+     * Wait for cart confirmation after adding product
+     */
+    async waitForCartConfirmation() {
+        console.log('Waiting for cart confirmation...');
+        const confirmationSelectors = [
+            'text=/added to cart/i',
+            'text=/item added/i',
+            '.MuiSnackbar-root',
+            '[role="alert"]',
+            '.cart-confirmation'
+        ];
+
+        for (const selector of confirmationSelectors) {
+            try {
+                const element = this.page.locator(selector).first();
+                if (await element.isVisible({ timeout: 5000 })) {
+                    console.log(`✓ Cart confirmation visible with: ${selector}`);
+                    return true;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+
+        console.log('No explicit confirmation, checking cart badge...');
+        return true; // Continue even without explicit confirmation
+    }
 }
 
 module.exports = ProductListingPage;

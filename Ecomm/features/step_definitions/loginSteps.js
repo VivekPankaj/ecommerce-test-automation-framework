@@ -196,7 +196,11 @@ When("I navigate to the PDP page", async function () {
 });
 
 When("I navigate to the Cart page", async function () {
-    await loginPage.navigateToCart();
+    console.log('Navigating to Cart page...');
+    // Direct navigation to cart page is more reliable
+    await this.page.goto('https://qa-shop.vulcanmaterials.com/cart', { waitUntil: 'domcontentloaded' });
+    await this.page.waitForTimeout(2000);
+    console.log('✓ On Cart page');
 });
 
 When("I sign out from the current page", async function () {
