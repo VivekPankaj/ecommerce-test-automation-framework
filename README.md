@@ -498,6 +498,129 @@ Test artifacts are automatically captured:
 
 ---
 
+### 8. Checkout Module (`checkout.feature`) 🆕 NEW
+**Purpose:** Validate complete checkout flow including address, schedule, payment, and order placement  
+**Status:** 🆕 New | 45 scenarios
+
+#### Jira Epic References
+- ECM-827 - Checkout Main Epic
+- ECM-612 - Delivery Flow
+- ECM-597 - Payment Flow
+- ECM-593 - Schedule/Time Slot Selection
+- ECM-589 - Order Review & Confirmation
+- ECM-583 - Guest Checkout Flow
+
+#### Checkout Navigation Scenarios (2)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 1 | Guest user navigates to checkout page from cart | `@Sanity @P1 @CheckoutNavigation @Guest` | P1 |
+| 2 | Registered user navigates to checkout page from cart | `@P1 @CheckoutNavigation @Registered` | P1 |
+
+#### Delivery Address Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 3 | Guest user enters delivery address during checkout | `@Sanity @P1 @Delivery @DeliveryAddress @Guest` | P1 |
+| 4 | Registered user selects saved delivery address | `@P1 @Delivery @DeliveryAddress @Registered` | P1 |
+| 5 | Registered user adds new delivery address during checkout | `@P2 @Delivery @DeliveryAddress @NewAddress` | P2 |
+| 6 | User edits delivery address during checkout | `@P2 @Delivery @DeliveryAddress @EditAddress` | P2 |
+
+#### Pickup Facility Scenarios (3)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 7 | Guest user completes checkout with Pickup option | `@Sanity @P1 @Pickup @FacilitySelection @Guest` | P1 |
+| 8 | Registered user completes checkout with Pickup at saved facility | `@P1 @Pickup @FacilitySelection @Registered` | P1 |
+| 9 | User changes pickup facility during checkout | `@P2 @Pickup @ChangeFacility` | P2 |
+
+#### Schedule - Delivery Time Slot Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 10 | User selects delivery date and time slot | `@Sanity @P1 @Schedule @Delivery @TimeSlot` | P1 |
+| 11 | User selects same-day delivery | `@P1 @Schedule @Delivery @TodayDelivery` | P1 |
+| 12 | User selects future delivery date | `@P2 @Schedule @Delivery @FutureDate` | P2 |
+| 13 | User changes delivery schedule | `@P2 @Schedule @Delivery @ChangeSchedule` | P2 |
+
+#### Schedule - Pickup Time Slot Scenarios (2)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 14 | User selects pickup date and time slot | `@Sanity @P1 @Schedule @Pickup @TimeSlot` | P1 |
+| 15 | Pickup time slots respect facility operating hours | `@P2 @Schedule @Pickup @FacilityHours` | P2 |
+
+#### Payment - Credit Card Scenarios (5)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 16 | Guest user enters new credit card for payment | `@Sanity @P1 @Payment @CreditCard @Guest` | P1 |
+| 17 | Registered user pays with saved credit card | `@P1 @Payment @CreditCard @Registered` | P1 |
+| 18 | Guest user saves credit card for future use | `@P2 @Payment @CreditCard @SaveCard` | P2 |
+| 19 | Registered user adds new credit card during checkout | `@P2 @Payment @CreditCard @AddNewCard` | P2 |
+| 20 | User sees error for invalid credit card | `@P3 @Payment @CreditCard @InvalidCard` | P3 |
+
+#### Payment - Pay on Delivery/Pickup Scenarios (2)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 21 | User selects Pay on Delivery option | `@P2 @Payment @PayOnDelivery` | P2 |
+| 22 | User selects Pay on Pickup option | `@P2 @Payment @PayOnPickup` | P2 |
+
+#### Order Summary Validation Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 23 | Validate Order Summary for Delivery order | `@Sanity @P1 @OrderSummary @Delivery` | P1 |
+| 24 | Validate Order Summary for Pickup order | `@P1 @OrderSummary @Pickup` | P1 |
+| 25 | Validate Order Summary with multiple products | `@P2 @OrderSummary @MultipleProducts` | P2 |
+| 26 | Edit quantity from checkout page updates Order Summary | `@P2 @OrderSummary @EditQuantity` | P2 |
+
+#### Place Order - Success Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 27 | Guest user places order with Delivery successfully | `@Sanity @P1 @PlaceOrder @Delivery @Guest` | P1 |
+| 28 | Guest user places order with Pickup successfully | `@Sanity @P1 @PlaceOrder @Pickup @Guest` | P1 |
+| 29 | Registered user places order with Delivery successfully | `@Sanity @P1 @PlaceOrder @Delivery @Registered` | P1 |
+| 30 | Registered user places order with Pickup successfully | `@P1 @PlaceOrder @Pickup @Registered` | P1 |
+
+#### Order Confirmation Scenarios (3)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 31 | Validate Order Confirmation page elements | `@Sanity @P1 @OrderConfirmation` | P1 |
+| 32 | View Order Details from confirmation page | `@P2 @OrderConfirmation @ViewOrderDetails` | P2 |
+| 33 | Continue Shopping from confirmation page | `@P2 @OrderConfirmation @ContinueShopping` | P2 |
+
+#### Checkout Validation & Error Handling Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 34 | User cannot place order with incomplete checkout | `@P2 @Validation @IncompleteCheckout` | P2 |
+| 35 | User sees error when address is missing | `@P2 @Validation @MissingAddress` | P2 |
+| 36 | User sees error when schedule is not selected | `@P2 @Validation @MissingSchedule` | P2 |
+| 37 | User session timeout during checkout | `@P3 @Validation @SessionTimeout` | P3 |
+
+#### Promo Code / Discount Scenarios (3)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 38 | User applies valid promo code | `@P2 @PromoCode @ValidCode` | P2 |
+| 39 | User sees error for invalid promo code | `@P3 @PromoCode @InvalidCode` | P3 |
+| 40 | User removes applied promo code | `@P3 @PromoCode @RemoveCode` | P3 |
+
+#### Guest Checkout to Registration Scenarios (2)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 41 | Guest user creates account after placing order | `@P2 @GuestCheckout @CreateAccount` | P2 |
+| 42 | Guest user signs in during checkout | `@P3 @GuestCheckout @SignInDuringCheckout` | P3 |
+
+**Coverage:** Complete checkout flow, Delivery/Pickup modes, Address management, Schedule selection, Payment methods (Credit Card, Pay on Delivery/Pickup), Order Summary, Order placement, Confirmation page, Promo codes, Guest to Registered conversion
+
+---
+
 ## Coverage Summary
 
 | Module | Feature File | Scenarios | P1 | P2 | P3 | Status |
@@ -511,7 +634,8 @@ Test artifacts are automatically captured:
 | **PDP (Delivery)** | `product-display-page-validation.feature` | 7 | 3 | 4 | - | 🔒 Locked |
 | **PDP (Pickup)** | `product-display-page-validation.feature` | 3 | 1 | 2 | - | 🔒 Locked |
 | **Add to Cart** | `add-to-cart.feature` | 29 | 16 | 10 | - | 🔄 In Progress |
-| **TOTAL** | | **78** | **35** | **34** | **3** | **49 Locked** |
+| **Checkout** | `checkout.feature` | 45 | 20 | 18 | 7 | 🆕 New |
+| **TOTAL** | | **123** | **55** | **52** | **10** | **49 Locked** |
 
 ---
 
@@ -529,12 +653,22 @@ npx cucumber-js --config .cucumber.json --tags "@PLP"
 npx cucumber-js --config .cucumber.json --tags "@PDP"
 npx cucumber-js --config .cucumber.json --tags "@Pickup"
 npx cucumber-js --config .cucumber.json --tags "@AddToCart"
+npx cucumber-js --config .cucumber.json --tags "@Checkout"
 
 # Run Add to Cart scenarios by type
 npx cucumber-js --config .cucumber.json --tags "@AddToCart and @Guest"
 npx cucumber-js --config .cucumber.json --tags "@AddToCart and @Registered"
 npx cucumber-js --config .cucumber.json --tags "@AddToCart and @RemoveFromCart"
 npx cucumber-js --config .cucumber.json --tags "@AddToCart and @CartValidation"
+
+# Run Checkout scenarios by type
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @Guest"
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @Registered"
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @Delivery"
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @Pickup"
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @Payment"
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @PlaceOrder"
+npx cucumber-js --config .cucumber.json --tags "@Checkout and @OrderConfirmation"
 
 # Run by Priority
 npx cucumber-js --config .cucumber.json --tags "@P1"
