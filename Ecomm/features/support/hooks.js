@@ -3,8 +3,15 @@ const { chromium, firefox, webkit } = require('@playwright/test');
 const { setDefaultTimeout } = require('@cucumber/cucumber');
 setDefaultTimeout(120 * 1000); // Increased to 120 seconds to allow more time for browser launch
 
-Before(async function () {
+Before(async function (scenario) {
     // This hook will be executed before all scenarios
+    
+    // Check if this is a Pickup scenario and set a flag
+    const tags = scenario.pickle.tags.map(t => t.name);
+    this.isPickupScenario = tags.includes('@Pickup');
+    if (this.isPickupScenario) {
+        console.log('>>> PICKUP SCENARIO DETECTED - will skip delivery address setup');
+    }
 
     const browserName = process.env.BROWSER || 'chromium';  // Set Chromium as default browser
     const browserType = { chromium, firefox, webkit }[browserName] || chromium;
