@@ -679,9 +679,8 @@ Then('each product should show name, quantity, and price', async function() {
     }
 });
 
-Then('the Subtotal should be sum of all product prices', async function() {
-    // Math validation would require actual price calculations
-});
+// NOTE: "the Subtotal should be sum of all product prices" is defined in addToCartSteps.js
+// Do not duplicate here to avoid ambiguous step definitions
 
 Then('the Estimated Total should include all charges', async function() {
     const checkoutPage = new CheckoutPage(this.page);

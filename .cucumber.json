@@ -8,7 +8,19 @@
       "Ecomm/features/support/**/*.js"
     ],
     "format": [
-      "progress-bar"
+      "progress-bar",
+      "rerun:@rerun.txt"
+    ],
+    "parallel": 1
+  },
+  "rerun": {
+    "require": [
+      "Ecomm/features/step_definitions/**/*.js",
+      "Ecomm/features/support/**/*.js"
+    ],
+    "format": [
+      "progress-bar",
+      "rerun:@rerun.txt"
     ],
     "parallel": 1
   }
