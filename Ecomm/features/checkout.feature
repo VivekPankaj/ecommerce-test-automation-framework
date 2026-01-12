@@ -49,7 +49,7 @@ Feature: Checkout Flow
     Then I should be on the Cart page
     When I click on the Checkout button
     Then I should be on the Checkout page
-    And I should see the Order Summary section
+    And I should see the Order Summary on checkout page
     And I should see the Delivery/Pickup section
     And I should see the Schedule section
     And I should see the Payment section

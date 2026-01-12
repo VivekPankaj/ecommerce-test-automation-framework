@@ -34,7 +34,9 @@ Then('I should be on the Checkout page', async function() {
     expect(isOnCheckout).toBe(true);
 });
 
-Then('I should see the Order Summary section', async function() {
+// Note: "I should see the Order Summary section" is defined in myAccountSteps.js
+// Use that for generic Order Summary checks, or use the checkout-specific one below
+Then('I should see the Order Summary on checkout page', async function() {
     const checkoutPage = new CheckoutPage(this.page);
     const isVisible = await checkoutPage.isOrderSummarySectionVisible();
     expect(isVisible).toBe(true);

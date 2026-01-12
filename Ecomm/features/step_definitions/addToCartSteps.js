@@ -148,14 +148,38 @@ Given('I clear all items from the cart', async function () {
     const maxAttempts = 10;
     
     while (attempts < maxAttempts) {
-        const removeButton = this.page.locator('button:has-text("Remove"), [aria-label*="remove"], [aria-label*="delete"]').first();
+        // Step 1: Look for Remove link on product card using JavaScript
+        // We need to find a small element with text "Remove" that is NOT in a toast/snackbar
+        const clicked = await this.page.evaluate(() => {
+            const elementsWithRemove = document.querySelectorAll('a, button, span, div');
+            for (const el of elementsWithRemove) {
+                if (el.innerText && el.innerText.trim() === 'Remove') {
+                    const rect = el.getBoundingClientRect();
+                    // Small element (not the whole product card), not in a toast
+                    if (rect.width > 0 && rect.width < 200 && rect.height > 0 && !el.closest('.MuiSnackbar-root') && !el.closest('.component--toast')) {
+                        el.click();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
         
-        if (await removeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await removeButton.click();
+        if (clicked) {
+            console.log(`Clicking Remove for item ${attempts + 1}...`);
             await this.page.waitForTimeout(1500);
+            
+            // Step 2: Click Remove in the confirmation toast
+            const confirmBtn = this.page.locator('.component--toast button.MuiButton-outlinedPrimary, .MuiSnackbar-root button:has-text("Remove"), [role="alert"] button:has-text("Remove")').first();
+            if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+                await confirmBtn.click();
+                console.log(`✓ Confirmed removal for item ${attempts + 1}`);
+                await this.page.waitForTimeout(2000);
+            }
+            
             attempts++;
-            console.log(`Removed item ${attempts} from cart`);
         } else {
+            console.log('No more items to remove');
             break;
         }
     }
@@ -405,33 +429,45 @@ Then('the slider should NOT show delivery charges', async function () {
 When('I click the close button on the slider', async function () {
     console.log('Clicking close button on slider...');
     
-    const closeSelectors = [
-        'button[aria-label="close"]',
-        'button[aria-label="Close"]',
-        '.MuiDrawer-root button svg',
-        '[role="dialog"] button:has(svg)',
-        'button:has-text("×")',
-        'button:has-text("X")'
-    ];
+    // Wait for slider to be fully visible
+    await this.page.waitForTimeout(1000);
     
-    for (const selector of closeSelectors) {
-        try {
-            const closeBtn = this.page.locator(selector).first();
-            if (await closeBtn.isVisible({ timeout: 2000 })) {
-                await closeBtn.click();
-                console.log(`✓ Clicked close with: ${selector}`);
-                await this.page.waitForTimeout(1000);
-                return;
-            }
-        } catch (e) {
-            continue;
+    // From DOM inspection: The X button is:
+    // <button class="MuiButtonBase-root MuiIconButton-root MuiIconButton-sizeMedium" aria-label="close">
+    //   <svg class="MuiSvgIcon-root">...</svg>
+    // </button>
+    
+    // Try the most specific selector first
+    const closeBtn = this.page.locator('button.MuiIconButton-root[aria-label="close"]').first();
+    
+    if (await closeBtn.isVisible({ timeout: 3000 })) {
+        await closeBtn.click();
+        console.log('✓ Clicked close button (MuiIconButton with aria-label="close")');
+    } else {
+        // Fallback: try any button with aria-label="close"
+        const fallbackBtn = this.page.locator('button[aria-label="close"]').first();
+        if (await fallbackBtn.isVisible({ timeout: 2000 })) {
+            await fallbackBtn.click();
+            console.log('✓ Clicked close button (fallback aria-label="close")');
+        } else {
+            // Last resort: press Escape
+            console.log('Close button not found, pressing Escape...');
+            await this.page.keyboard.press('Escape');
         }
     }
     
-    // Fallback: click outside the slider to close it
-    await this.page.keyboard.press('Escape');
+    // Wait for slider to close
     await this.page.waitForTimeout(1000);
-    console.log('✓ Closed slider');
+    
+    // Verify drawer is closed
+    const drawerStillOpen = await this.page.locator('.MuiDrawer-root').first().isVisible({ timeout: 500 }).catch(() => false);
+    if (drawerStillOpen) {
+        console.log('Drawer still open, pressing Escape again...');
+        await this.page.keyboard.press('Escape');
+        await this.page.waitForTimeout(500);
+    }
+    
+    console.log('✓ Slider closed');
 });
 
 When('I click {string} button in the slider', async function (buttonText) {
@@ -620,10 +656,48 @@ Then('I should see {int} product in the cart', async function (count) {
 Then('I should see {int} different products in the cart', async function (count) {
     console.log(`Checking for ${count} different products in cart...`);
     
-    const productItems = this.page.locator('.cart-item, [data-testid="cart-item"], .MuiListItem-root');
-    const actualCount = await productItems.count();
+    // Wait for cart to load
+    await this.page.waitForTimeout(2000);
     
-    // Log the count
+    // Multiple selectors to find cart product items
+    // Based on DOM: cart items have class component--cart-item-tile or contain product info
+    const productSelectors = [
+        '[class*="cart-item-tile"]',
+        '[class*="cart-item"]',
+        '.component--cart-item-tile',
+        '[data-testid="cart-item"]'
+    ];
+    
+    let actualCount = 0;
+    for (const selector of productSelectors) {
+        const items = this.page.locator(selector);
+        actualCount = await items.count();
+        if (actualCount > 0) {
+            console.log(`Found ${actualCount} product items with selector: ${selector}`);
+            break;
+        }
+    }
+    
+    // Fallback: count elements that have "Remove" links (each product has one)
+    if (actualCount === 0) {
+        // Count small Remove buttons/links that are NOT in toast
+        const removeCount = await this.page.evaluate(() => {
+            const elements = document.querySelectorAll('a, button, span, div');
+            let count = 0;
+            for (const el of elements) {
+                if (el.innerText && el.innerText.trim() === 'Remove') {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.width > 0 && rect.width < 200 && !el.closest('.MuiSnackbar-root')) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        });
+        actualCount = removeCount;
+        console.log(`Found ${actualCount} products by counting Remove buttons`);
+    }
+    
     console.log(`Found ${actualCount} product items in cart`);
     expect(actualCount).toBeGreaterThanOrEqual(count);
     console.log(`✓ Cart has ${count} different products`);
@@ -649,24 +723,99 @@ When('I click Remove for the first product', async function () {
     
     // First, close any open drawers/modals that might be blocking
     await closeAnyOpenDrawers(this.page);
+    await this.page.waitForTimeout(500);
     
-    // Click the Remove link on the product card
-    const removeSelectors = [
-        'a:has-text("Remove")',
-        'button.component--remove-button:has-text("Remove")',
-        'button.component--cart-item-delete-button',
-        '[aria-label*="remove"]',
-        'text="Remove"'
+    // Step 1: Click the Remove link on the product card
+    // IMPORTANT: We need to click specifically the Remove link/button, NOT the product card itself
+    // The Remove link typically has a trash icon (svg) and text "Remove"
+    // From the DOM: it's a clickable element with text "Remove" that is NOT the main product link
+    
+    console.log('Looking for Remove link on product card...');
+    
+    // Use JavaScript to find and click the correct Remove element
+    // We need to find an element that:
+    // 1. Contains text "Remove" 
+    // 2. Is a small clickable element (not the entire product card)
+    // 3. Is inside the cart item area
+    const clicked = await this.page.evaluate(() => {
+        // Find all elements containing "Remove" text
+        const allElements = document.querySelectorAll('*');
+        
+        for (const el of allElements) {
+            // Check if this element's direct text content is "Remove"
+            const directText = Array.from(el.childNodes)
+                .filter(node => node.nodeType === Node.TEXT_NODE)
+                .map(node => node.textContent.trim())
+                .join('');
+            
+            // Also check innerText but only if element is small (not a container)
+            const innerText = el.innerText || el.textContent || '';
+            const rect = el.getBoundingClientRect();
+            
+            // We want a small element (< 200px wide) that has "Remove" text
+            // and is visible on screen
+            if (rect.width > 0 && rect.width < 200 && rect.height > 0 && rect.height < 100) {
+                if (innerText.trim() === 'Remove' || directText === 'Remove') {
+                    // Make sure it's not inside a snackbar/toast (that's the confirmation)
+                    if (!el.closest('.MuiSnackbar-root') && !el.closest('.component--toast')) {
+                        console.log('Found Remove element:', el.tagName, rect.width, 'x', rect.height);
+                        el.click();
+                        return { success: true, tag: el.tagName, width: rect.width, height: rect.height };
+                    }
+                }
+            }
+        }
+        
+        // Fallback: try to find by looking for trash icon + Remove text combination
+        const elementsWithRemove = document.querySelectorAll('a, button, span, div');
+        for (const el of elementsWithRemove) {
+            if (el.innerText && el.innerText.trim() === 'Remove') {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.width < 200 && !el.closest('.MuiSnackbar-root')) {
+                    el.click();
+                    return { success: true, tag: el.tagName, width: rect.width, fallback: true };
+                }
+            }
+        }
+        
+        return { success: false };
+    });
+    
+    if (!clicked.success) {
+        await this.page.screenshot({ path: 'remove_link_not_found.png' });
+        throw new Error('Remove link not found on product card');
+    }
+    
+    console.log(`✓ Clicked Remove element (${clicked.tag}, ${clicked.width}px wide)`);
+    
+    // Step 2: Wait for confirmation toast/snackbar to appear
+    console.log('Waiting for confirmation toast...');
+    await this.page.waitForTimeout(1500);
+    
+    // Step 3: Click the Remove button in the confirmation toast
+    // From DOM: div.MuiSnackbar-root.component--toast contains the alert with Cancel and Remove buttons
+    // The Remove button has class: MuiButton-outlinedPrimary
+    const confirmSelectors = [
+        '.component--toast button.MuiButton-outlinedPrimary',
+        '.MuiSnackbar-root button.MuiButton-outlinedPrimary',
+        '.MuiSnackbar-root button:has-text("Remove")',
+        '[role="alert"] button.MuiButton-outlinedPrimary',
+        '[role="alert"] button:has-text("Remove")',
+        '.MuiAlert-root button:has-text("Remove")'
     ];
     
-    let removeClicked = false;
-    for (const selector of removeSelectors) {
+    let confirmClicked = false;
+    for (const btnSelector of confirmSelectors) {
         try {
-            const removeBtn = this.page.locator(selector).first();
-            if (await removeBtn.isVisible({ timeout: 3000 })) {
-                await removeBtn.click();
-                console.log(`✓ Clicked remove link with: ${selector}`);
-                removeClicked = true;
+            const confirmBtn = this.page.locator(btnSelector).first();
+            if (await confirmBtn.isVisible({ timeout: 3000 })) {
+                await confirmBtn.click();
+                console.log(`✓ Clicked confirmation Remove button with: ${btnSelector}`);
+                confirmClicked = true;
+                
+                // Wait for the cart to update after removal
+                console.log('Waiting for cart to update...');
+                await this.page.waitForTimeout(2000);
                 break;
             }
         } catch (e) {
@@ -674,67 +823,13 @@ When('I click Remove for the first product', async function () {
         }
     }
     
-    if (!removeClicked) {
-        throw new Error('Remove link not found on product');
+    if (!confirmClicked) {
+        // Take screenshot for debugging
+        await this.page.screenshot({ path: 'remove_confirm_failed.png' });
+        console.log('Warning: Could not click confirmation Remove button');
     }
     
-    // Wait for confirmation modal/snackbar to appear
-    await this.page.waitForTimeout(2000);
-    
-    // Handle confirmation - "Are you sure you want to remove this item from your cart?"
-    // Based on the DOM, this is a MuiAlert with role="alert" containing Cancel and Remove buttons
-    console.log('Waiting for removal confirmation...');
-    
-    // The confirmation appears as a MuiAlert/Snackbar
-    const alertRemoveSelectors = [
-        '[role="alert"] button.MuiButton-outlined:has-text("Remove")',
-        '[role="alert"] button.MuiButton-outlinedPrimary:has-text("Remove")',
-        '.MuiAlert-root button.MuiButton-outlined:has-text("Remove")',
-        '.MuiSnackbar-root button:has-text("Remove")',
-        '[role="alert"] button:has-text("Remove")'
-    ];
-    
-    for (const btnSelector of alertRemoveSelectors) {
-        try {
-            const confirmBtn = this.page.locator(btnSelector).first();
-            if (await confirmBtn.isVisible({ timeout: 3000 })) {
-                await confirmBtn.click();
-                console.log(`✓ Clicked confirmation Remove button with: ${btnSelector}`);
-                
-                // Wait for the page to update after removal
-                console.log('Waiting for cart to update...');
-                await this.page.waitForTimeout(3000);
-                await this.page.waitForLoadState('networkidle').catch(() => {});
-                return;
-            }
-        } catch (e) {
-            continue;
-        }
-    }
-    
-    // Fallback: If alert selectors don't work, try finding by button text
-    console.log('Trying fallback for confirmation button...');
-    const allButtons = await this.page.locator('button').all();
-    for (const btn of allButtons) {
-        const text = await btn.textContent().catch(() => '');
-        const visible = await btn.isVisible().catch(() => false);
-        if (visible && text.trim() === 'Remove') {
-            // Check if this button is inside an alert/snackbar
-            const isInAlert = await btn.evaluate(el => {
-                const parent = el.closest('[role="alert"], .MuiAlert-root, .MuiSnackbar-root');
-                return parent !== null;
-            }).catch(() => false);
-            
-            if (isInAlert) {
-                await btn.click();
-                console.log('✓ Clicked Remove button in alert (fallback)');
-                await this.page.waitForTimeout(3000);
-                return;
-            }
-        }
-    }
-    
-    console.log('Warning: Could not confirm removal via modal');
+    console.log('✓ Remove from cart completed');
 });
 
 // Helper function to close any open drawers/modals
@@ -1221,10 +1316,35 @@ Then('the Estimated Total should include Subtotal plus charges', async function 
 
 When('I click on {string} link', async function (linkText) {
     console.log(`Clicking on "${linkText}" link...`);
-    const link = this.page.locator(`text="${linkText}", a:has-text("${linkText}")`).first();
-    await link.click();
+    
+    // Try multiple selectors for links
+    const selectors = [
+        `a:has-text("${linkText}")`,
+        `text="${linkText}"`,
+        `button:has-text("${linkText}")`,
+        `[class*="add-items"]:has-text("${linkText}")`
+    ];
+    
+    let clicked = false;
+    for (const selector of selectors) {
+        try {
+            const link = this.page.locator(selector).first();
+            if (await link.isVisible({ timeout: 2000 })) {
+                await link.click();
+                console.log(`✓ Clicked on "${linkText}" link with: ${selector}`);
+                clicked = true;
+                break;
+            }
+        } catch (e) {
+            continue;
+        }
+    }
+    
+    if (!clicked) {
+        throw new Error(`Could not find "${linkText}" link`);
+    }
+    
     await this.page.waitForTimeout(2000);
-    console.log(`✓ Clicked on "${linkText}" link`);
 });
 
 // ============================================================================
