@@ -423,19 +423,95 @@ Test artifacts are automatically captured:
 
 ---
 
+### 7. Add to Cart Module (`add-to-cart.feature`) 🔄 IN PROGRESS
+**Purpose:** Validate Add to Cart functionality across all entry points and user types  
+**Status:** 🔄 In Progress | 29 scenarios
+
+#### Entry Points
+
+| Entry Point | Description |
+|-------------|-------------|
+| **Shop by Project** | Navigate via Project menu → PLP → Add to Cart |
+| **Shop By Categories** | Navigate via Categories menu → PLP → Add to Cart |
+| **PDP** | Navigate to Product Display Page → Add to Cart |
+| **Search** | Search for product → Add to Cart from results |
+
+#### Guest User Scenarios (10)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 1 | Add product from PLP via Shop by Project - Delivery | `@Sanity @P1 @Guest @Delivery @ShopByProject` | P1 |
+| 2 | Add product from PLP via Shop by Project - Pickup | `@P1 @Guest @Pickup @ShopByProject` | P1 |
+| 3 | Add product from PLP via Shop By Categories - Delivery | `@Sanity @P1 @Guest @Delivery @ShopByCategories` | P1 |
+| 4 | Add product from PLP via Shop By Categories - Pickup | `@P2 @Guest @Pickup @ShopByCategories` | P2 |
+| 5 | Add product from PDP with default quantity - Delivery | `@Sanity @P1 @Guest @Delivery @PDP` | P1 |
+| 6 | Add product from PDP with custom quantity - Delivery | `@P1 @Guest @Delivery @PDP @CustomQuantity` | P1 |
+| 7 | Add product from PDP - Pickup | `@P1 @Guest @Pickup @PDP` | P1 |
+| 8 | Add product from Search results - Delivery | `@Sanity @P1 @Guest @Delivery @Search` | P1 |
+| 9 | Add product from Search results - Pickup | `@P2 @Guest @Pickup @Search` | P2 |
+
+#### Registered User Scenarios (5)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 10 | Add product from PLP - Delivery (with cart cleanup) | `@Sanity @P1 @Registered @Delivery @PLP` | P1 |
+| 11 | Add product from PLP - Pickup (with cart cleanup) | `@P1 @Registered @Pickup @PLP` | P1 |
+| 12 | Add product from PDP - Delivery | `@P1 @Registered @Delivery @PDP` | P1 |
+| 13 | Add product from Search - Delivery | `@P2 @Registered @Search` | P2 |
+
+#### Cart Behavior Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 14 | Same product multiple times increases quantity, not count | `@Sanity @P1 @CartBehavior @SameProduct` | P1 |
+| 15 | Different products increases cart count | `@Sanity @P1 @CartBehavior @DifferentProducts` | P1 |
+| 16 | Validate prices across all screens | `@P1 @CartBehavior @PriceValidation` | P1 |
+
+#### Remove from Cart Scenarios (3)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 17 | Remove single product from cart | `@Sanity @P1 @RemoveFromCart` | P1 |
+| 18 | Remove one product when multiple in cart | `@P1 @RemoveFromCart @MultipleProducts` | P1 |
+| 19 | Remove all products one by one | `@P2 @RemoveFromCart @AllProducts` | P2 |
+
+#### Cart Validation Scenarios (4)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 20 | Validate Order Summary section - Delivery | `@P1 @CartValidation @Delivery @OrderSummary` | P1 |
+| 21 | Validate Order Summary section - Pickup | `@P1 @CartValidation @Pickup @OrderSummary` | P1 |
+| 22 | Edit quantity in cart and verify price update | `@P1 @EditQuantity` | P1 |
+
+#### Cart Navigation Scenarios (3)
+
+| # | Scenario | Tags | Priority |
+|---|----------|------|----------|
+| 23 | Navigate to cart via header cart icon | `@P2 @CartNavigation @HeaderIcon` | P2 |
+| 24 | Navigate to cart via View Cart button in slider | `@P2 @CartNavigation @ViewCart` | P2 |
+| 25 | Continue Shopping from empty cart | `@P2 @EmptyCart @ContinueShopping` | P2 |
+
+**Coverage:** All entry points, Guest/Registered users, Delivery/Pickup modes, Cart confirmation slider, Order Summary validation, Remove functionality, Quantity updates
+
+**Known Issues:**
+- Remove from cart modal click needs refinement
+
+---
+
 ## Coverage Summary
 
 | Module | Feature File | Scenarios | P1 | P2 | P3 | Status |
 |--------|--------------|-----------|----|----|----|----|
 | **Login** | `login.feature` | 5 | 2 | 3 | - | 🔒 Locked |
 | **My Account** | `my-account.feature` | 12 | 5 | 7 | - | 🔒 Locked |
-| **Search** | `search.feature` | 10 | 2 | 4 | 4 | 🔒 Locked |
+| **Search** | `search.feature` | 9 | 2 | 4 | 3 | 🔒 Locked |
 | **Quarry Selector** | `quarry-selector-page-validation.feature` | 3 | - | - | - | ✅ Ready |
 | **PLP (Delivery)** | `product-listing-page-validation.feature` | 6 | 3 | 3 | - | 🔒 Locked |
 | **PLP (Pickup)** | `product-listing-page-validation.feature` | 4 | 3 | 1 | - | 🔒 Locked |
 | **PDP (Delivery)** | `product-display-page-validation.feature` | 7 | 3 | 4 | - | 🔒 Locked |
 | **PDP (Pickup)** | `product-display-page-validation.feature` | 3 | 1 | 2 | - | 🔒 Locked |
-| **TOTAL** | | **50** | **19** | **24** | **4** | **40 Locked** |
+| **Add to Cart** | `add-to-cart.feature` | 29 | 16 | 10 | - | 🔄 In Progress |
+| **TOTAL** | | **78** | **35** | **34** | **3** | **49 Locked** |
 
 ---
 
@@ -452,6 +528,13 @@ npx cucumber-js --config .cucumber.json --tags "@Search"
 npx cucumber-js --config .cucumber.json --tags "@PLP"
 npx cucumber-js --config .cucumber.json --tags "@PDP"
 npx cucumber-js --config .cucumber.json --tags "@Pickup"
+npx cucumber-js --config .cucumber.json --tags "@AddToCart"
+
+# Run Add to Cart scenarios by type
+npx cucumber-js --config .cucumber.json --tags "@AddToCart and @Guest"
+npx cucumber-js --config .cucumber.json --tags "@AddToCart and @Registered"
+npx cucumber-js --config .cucumber.json --tags "@AddToCart and @RemoveFromCart"
+npx cucumber-js --config .cucumber.json --tags "@AddToCart and @CartValidation"
 
 # Run by Priority
 npx cucumber-js --config .cucumber.json --tags "@P1"
