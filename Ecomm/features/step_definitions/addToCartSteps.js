@@ -198,10 +198,31 @@ Given('I set delivery address using primary zipcode', async function () {
     const addressData = testData.test_addresses.athens_tn;
     console.log(`Setting delivery address: ${addressData.searchQuery || addressData.fullAddress}`);
     
+    // Initialize plpPage if not already initialized (e.g., when coming from Search page)
+    if (!this.plpPage) {
+        this.plpPage = new ProductListingPage(this.page);
+    }
+    
     await this.plpPage.addAddressLocation();
     await this.page.waitForTimeout(2000);
     console.log('✓ Delivery address set');
 });
+
+// Explicit step for setting delivery address on search results page
+Given('I set delivery address on search results page', async function () {
+    const testData = require('../../../utils/testData.json');
+    const addressData = testData.test_addresses.athens_tn;
+    console.log(`Setting delivery address on search results: ${addressData.searchQuery || addressData.fullAddress}`);
+    
+    // Initialize ProductListingPage for address location functionality
+    // (SearchPage and PLPPage use same address selector mechanism)
+    this.plpPage = new ProductListingPage(this.page);
+    
+    await this.plpPage.addAddressLocation();
+    await this.page.waitForTimeout(2000);
+    console.log('✓ Delivery address set on search results');
+});
+
 
 // ============================================================================
 // REGISTERED USER SETUP
@@ -1290,11 +1311,50 @@ Then('the quantity should be updated to {string}', async function (quantity) {
 When('I note the price of the first product on PLP', async function () {
     console.log('Noting price of first product on PLP...');
     
-    const priceElement = this.page.locator('div.component--product-tile').first().locator('p[aria-label*="Price"], .component--product-price, text=/\\$[0-9]/').first();
-    const priceText = await priceElement.textContent();
+    // Wait for products to load (important for VPN/slow networks)
+    await this.page.waitForSelector('div.component--product-tile', { timeout: 30000 });
+    await this.page.waitForTimeout(2000); // Extra wait for prices to render
     
+    // Get the first product tile
+    const firstProductTile = this.page.locator('div.component--product-tile').first();
+    
+    // Try multiple strategies to find the price
+    let priceText = null;
+    
+    // Strategy 1: Look for price by aria-label
+    try {
+        const priceByAria = firstProductTile.locator('[aria-label*="Price"]').first();
+        if (await priceByAria.isVisible({ timeout: 5000 })) {
+            priceText = await priceByAria.textContent();
+        }
+    } catch (e) {
+        console.log('Price not found by aria-label, trying other methods...');
+    }
+    
+    // Strategy 2: Look for component--product-price class
+    if (!priceText) {
+        try {
+            const priceByClass = firstProductTile.locator('.component--product-price').first();
+            if (await priceByClass.isVisible({ timeout: 5000 })) {
+                priceText = await priceByClass.textContent();
+            }
+        } catch (e) {
+            console.log('Price not found by class, trying text search...');
+        }
+    }
+    
+    // Strategy 3: Search for $ sign in the tile
+    if (!priceText) {
+        priceText = await firstProductTile.textContent();
+    }
+    
+    // Extract price from text
     const match = priceText.match(/\$([0-9,]+\.?\d*)/);
     plpPrice = match ? parseFloat(match[1].replace(/,/g, '')) : 0;
+    
+    if (plpPrice === 0) {
+        throw new Error('Could not extract price from PLP. Text found: ' + priceText);
+    }
     
     console.log(`✓ PLP price noted: $${plpPrice}`);
     this.plpPrice = plpPrice;
