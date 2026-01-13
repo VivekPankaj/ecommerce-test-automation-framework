@@ -394,7 +394,7 @@ Then("I should see Modify Quantity link for each product", async function () {
     console.log(`✓ Found ${count} Modify Quantity link(s)`);
 });
 
-Then("I should see the Order Summary section", async function () {
+Then("I should see the Order Summary section in my account", async function () {
     myAccountPage = myAccountPage || new MyAccountPage(this.page);
     const hasOrderSummary = await myAccountPage.hasOrderSummarySection();
     

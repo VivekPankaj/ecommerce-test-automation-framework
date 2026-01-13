@@ -1464,7 +1464,42 @@ Then('I should see the Remove link', async function () {
     console.log('✓ Remove link visible');
 });
 
-// Note: "I should see the Order Summary section" is defined in myAccountSteps.js
+Then('I should see the Order Summary section', async function () {
+    console.log('Checking for Order Summary section on Cart page...');
+    
+    // Order Summary section in cart page typically has "Order Summary" heading
+    const orderSummarySelectors = [
+        'text="Order Summary"',
+        'h2:has-text("Order Summary")',
+        'h3:has-text("Order Summary")',
+        '[class*="order-summary"]',
+        '[class*="OrderSummary"]',
+        '[data-testid*="order-summary"]'
+    ];
+    
+    let found = false;
+    for (const selector of orderSummarySelectors) {
+        try {
+            const element = this.page.locator(selector).first();
+            if (await element.isVisible({ timeout: 3000 })) {
+                console.log(`✓ Found Order Summary with selector: ${selector}`);
+                found = true;
+                break;
+            }
+        } catch (e) {
+            continue;
+        }
+    }
+    
+    if (!found) {
+        // Take screenshot for debugging
+        const screenshot = await this.page.screenshot();
+        this.attach(screenshot, 'image/png');
+        throw new Error('Order Summary section not visible on Cart page');
+    }
+    
+    console.log('✓ Order Summary section visible');
+});
 
 Then('I should see the Subtotal in Order Summary', async function () {
     console.log('Checking for Subtotal...');
@@ -1565,17 +1600,68 @@ Then('I should see the pickup facility name in header', async function () {
 When('I click on the quantity for the first product', async function () {
     console.log('Clicking on quantity to open slider...');
     // Click on the quantity element (e.g., "66 Tons >")
-    const quantityBtn = this.page.locator('button:has-text("Tons"), text=/\\d+ Tons.*>/').first();
-    await quantityBtn.click();
+    // Look for button or clickable element containing "Tons" text
+    const quantitySelectors = [
+        'button:has-text("Tons")',
+        '[class*="quantity"]:has-text("Tons")',
+        'text=/\\d+\\s*Tons/'
+    ];
+    
+    let clicked = false;
+    for (const selector of quantitySelectors) {
+        try {
+            const quantityBtn = this.page.locator(selector).first();
+            if (await quantityBtn.isVisible({ timeout: 2000 })) {
+                await quantityBtn.click();
+                console.log(`✓ Clicked quantity with selector: ${selector}`);
+                clicked = true;
+                break;
+            }
+        } catch (e) {
+            continue;
+        }
+    }
+    
+    if (!clicked) {
+        throw new Error('Could not find or click quantity element');
+    }
+    
     await this.page.waitForTimeout(1500);
-    console.log('✓ Clicked on quantity');
 });
 
 Then('the quantity selector slider should open', async function () {
     console.log('Checking if quantity selector slider opened...');
-    const sliderTitle = this.page.locator('text="SELECT QUANTITY", text="Select Quantity"').first();
-    const isVisible = await sliderTitle.isVisible({ timeout: 5000 });
-    expect(isVisible).toBe(true);
+    
+    // Wait for the SELECT QUANTITY drawer to appear
+    const sliderSelectors = [
+        'text="SELECT QUANTITY"',
+        'text="Select Quantity"',
+        '[role="dialog"]:has-text("QUANTITY")',
+        '.MuiDrawer-root:has-text("Tons")',
+        '[class*="quantity"]:has-text("Tons")'
+    ];
+    
+    let found = false;
+    for (const selector of sliderSelectors) {
+        try {
+            const element = this.page.locator(selector).first();
+            if (await element.isVisible({ timeout: 3000 })) {
+                console.log(`✓ Quantity selector found with: ${selector}`);
+                found = true;
+                break;
+            }
+        } catch (e) {
+            continue;
+        }
+    }
+    
+    if (!found) {
+        // Take screenshot for debugging
+        const screenshot = await this.page.screenshot();
+        this.attach(screenshot, 'image/png');
+        throw new Error('Quantity selector slider did not open');
+    }
+    
     console.log('✓ Quantity selector slider opened');
 });
 

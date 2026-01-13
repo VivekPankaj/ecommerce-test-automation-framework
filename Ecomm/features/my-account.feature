@@ -69,7 +69,7 @@ Feature: My Account Validation
     And the Order number should match the noted order number
     And the Order date should match the noted order date
     And I should see Modify Quantity link for each product
-    And I should see the Order Summary section
+    And I should see the Order Summary section in my account
     And I should see Pickup Details or Delivery Details section
 
   @P2 @PurchaseHistory @ViewDetails @ModifyQuantity

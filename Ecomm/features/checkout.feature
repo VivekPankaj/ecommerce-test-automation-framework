@@ -519,7 +519,7 @@ Feature: Checkout Flow
     When I click Remove on the promo code
     Then the promo code should be removed
     And the discount should be removed from Order Summary
-    And the Estimated Total should be recalculated
+    And the Estimated Total should be recalculated on checkout page
 
   # ============================================================================
   # PART M: GUEST CHECKOUT TO REGISTRATION

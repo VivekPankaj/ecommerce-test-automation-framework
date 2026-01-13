@@ -983,7 +983,7 @@ Then('the discount should be removed from Order Summary', async function() {
     await this.page.waitForTimeout(1000);
 });
 
-Then('the Estimated Total should be recalculated', async function() {
+Then('the Estimated Total should be recalculated on checkout page', async function() {
     const checkoutPage = new CheckoutPage(this.page);
     const total = await checkoutPage.getEstimatedTotal();
     expect(total).not.toBeNull();
