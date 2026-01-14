@@ -1,0 +1,4072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add to Cart Test Coverage Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header .timestamp {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        
+        .summary-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .summary-card .label {
+            font-size: 1.1em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .pass { color: #28a745; }
+        .fail { color: #dc3545; }
+        .skip { color: #ffc107; }
+        .total { color: #007bff; }
+        
+        .pass-rate {
+            padding: 30px 40px;
+            background: white;
+            border-left: 5px solid #dc3545;
+            margin: 0 40px 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .pass-rate h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545, #F44336);
+            width: 31.03448275862069%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: width 1s ease;
+        }
+        
+        .scenarios-section {
+            padding: 40px;
+        }
+        
+        .scenarios-section h2 {
+            font-size: 2em;
+            margin-bottom: 30px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .scenario-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 5px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .scenario-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .scenario-card.passed {
+            border-left-color: #28a745;
+            background: linear-gradient(to right, #f0fff4 0%, white 20%);
+        }
+        
+        .scenario-card.failed {
+            border-left-color: #dc3545;
+            background: linear-gradient(to right, #fff5f5 0%, white 20%);
+        }
+        
+        .scenario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .scenario-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+        
+        .scenario-status {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+        }
+        
+        .scenario-status.passed {
+            background: #28a745;
+            color: white;
+        }
+        
+        .scenario-status.failed {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .scenario-meta {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .steps-list {
+            margin-top: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .step {
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        
+        .step:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .step.passed {
+            border-left-color: #28a745;
+        }
+        
+        .step.failed {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .step.skipped {
+            border-left-color: #ffc107;
+            opacity: 0.6;
+        }
+        
+        .step-icon {
+            margin-right: 12px;
+            font-size: 1.2em;
+        }
+        
+        .step-text {
+            flex: 1;
+        }
+        
+        .step-keyword {
+            font-weight: bold;
+            margin-right: 8px;
+            color: #667eea;
+        }
+        
+        .error-message {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff5f5;
+            border-left: 4px solid #dc3545;
+            border-radius: 6px;
+            color: #721c24;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .error-message strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #dc3545;
+            font-size: 1.1em;
+        }
+        
+        .filter-buttons {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 12px 25px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            font-size: 1em;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .filter-buttons {
+                display: none;
+            }
+            .scenario-card {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 Add to Cart Test Coverage Report</h1>
+            <p class="timestamp">Generated: January 14, 2026 at 07:39 AM</p>
+        </div>
+        
+        <div class="summary">
+            <div class="summary-card">
+                <div class="label">Total Scenarios</div>
+                <div class="number total">29</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">✓ Passed</div>
+                <div class="number pass">9</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">✗ Failed</div>
+                <div class="number fail">20</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Total Steps</div>
+                <div class="number total">375</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">✓ Passed Steps</div>
+                <div class="number pass">122</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">✗ Failed Steps</div>
+                <div class="number fail">20</div>
+            </div>
+        </div>
+        
+        <div class="pass-rate">
+            <h2>Pass Rate: 31.0%</h2>
+            <div class="progress-bar">
+                <div class="progress-fill">31.0%</div>
+            </div>
+        </div>
+        
+        <div class="scenarios-section">
+            <h2>Test Scenarios (29 Total)</h2>
+            
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterScenarios('all')">All Scenarios</button>
+                <button class="filter-btn" onclick="filterScenarios('passed')">✓ Passed (9)</button>
+                <button class="filter-btn" onclick="filterScenarios('failed')">✗ Failed (20)</button>
+            </div>
+            
+            <div id="scenarios-container">
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">1. Guest adds product from PLP via Shop by Project - Delivery mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 39 |
+                        <strong>Steps:</strong> 13
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the home page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover on "Shop by Project" menu
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click on "Driveways" project
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page for "Driveways"
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon should change to "Add to Cart" text
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the price in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">2. Guest adds product from PLP via Shop by Project - Pickup mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 55 |
+                        <strong>Steps:</strong> 11
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the home page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover on "Shop by Project" menu
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click on "Road Base" project
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page for "Road Base"
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I switch to Pickup mode with primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I select a pickup facility
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the slider should NOT show delivery charges
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">3. Guest adds product from PLP via Shop By Categories - Delivery mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 73 |
+                        <strong>Steps:</strong> 13
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the home page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover on "Shop By Categories" menu
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click on a category from the menu
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the price in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product in the cart with correct price
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">4. Guest adds product from PLP via Shop By Categories - Pickup mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 89 |
+                        <strong>Steps:</strong> 12
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the home page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover on "Shop By Categories" menu
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click on a category from the menu
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I switch to Pickup mode with primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I select a pickup facility
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the cart should show pickup facility info
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">5. Guest adds product from PDP with default quantity - Delivery mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 108 |
+                        <strong>Steps:</strong> 11
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the Product Listing Page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Product Display Page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Add to Cart button on PDP
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the quantity "22 Tons" in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the total price in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">6. Guest adds product from PDP with custom quantity - Delivery mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 122 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the Product Listing Page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Product Display Page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I enter custom quantity "50" in the quantity field on PDP
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart button on PDP
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the quantity "50 Tons" in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">7. Guest adds product from PDP - Pickup mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 135 |
+                        <strong>Steps:</strong> 9
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the Product Listing Page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I switch to Pickup mode with primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I select a pickup facility
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Product Display Page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Add to Cart button on PDP
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the slider should NOT show delivery charges
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">8. Guest adds product from Search results - Delivery mode</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 151 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the home page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I search for "BASE"
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see search results
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[placeholder*="Search"]') to be visible[22m
+
+    at SearchPage.enterSearchTerm (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/pageobjects/SearchPage.js:90:25)
+    at async World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/searchSteps.js:20:5)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">9. Guest adds product from Search results - Pickup mode</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 164 |
+                        <strong>Steps:</strong> 9
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am on the home page as a Guest user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I search for "GRAVEL"
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see search results
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I switch to Pickup mode with primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I select a pickup facility
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">10. Registered user adds product from PLP - Delivery mode (with cart cleanup)</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 180 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">11. Registered user adds product from PLP - Pickup mode (with cart cleanup)</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 193 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I switch to Pickup mode with primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I select a pickup facility
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">12. Registered user adds product from PDP - Delivery mode</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 206 |
+                        <strong>Steps:</strong> 11
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Product Display Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Add to Cart button on PDP
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product in the cart
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">13. Registered user adds product from Search - Delivery mode</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 220 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I search for "STONE"
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see search results
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">14. Adding same product multiple times increases quantity, not cart count</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 237 |
+                        <strong>Steps:</strong> 16
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the quantity "22 Tons" in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the quantity "44 Tons" in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">15. Adding different products increases cart count</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 256 |
+                        <strong>Steps:</strong> 17
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 2
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the cart icon in header
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see 2 different products in the cart
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">16. Validate prices across all screens when adding multiple products</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 276 |
+                        <strong>Steps:</strong> 12
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I note the price of the first product on PLP
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the slider price should match the PLP price
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the cart price should match the PLP price
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card passed" data-status="passed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">17. Remove single product from cart</div>
+                        <div class="scenario-status passed">✓ PASSED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 295 |
+                        <strong>Steps:</strong> 14
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see 1 product in the cart
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Remove for the first product
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the product should be removed from the cart
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the empty cart message
+                            </span>
+                        </div>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the cart icon in header should show count 0
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">18. Remove one product when multiple products in cart</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 312 |
+                        <strong>Steps:</strong> 18
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart icon in header should show count 2
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the cart icon in header
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see 2 different products in the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Remove for the first product
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see 1 product in the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the cart icon in header should show count 1
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the cart total should be recalculated
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">19. Remove all products from cart one by one</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 333 |
+                        <strong>Steps:</strong> 16
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the cart icon in header
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click Remove for the first product
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Remove for the first product
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see the empty cart message
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the cart icon in header should show count 0
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">20. Edit quantity in cart via quantity slider and verify price update</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 356 |
+                        <strong>Steps:</strong> 20
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Order Summary section
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Subtotal in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Estimated Total in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the quantity for the first product
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the quantity selector slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see preset quantity options "0 Tons" "5 Tons" "10 Tons" "100 Tons"
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see "Enter Custom Quantity" field
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I enter "50" in the custom quantity field
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Save button in the quantity slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the quantity should be updated to "50 Tons"
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the Subtotal should be recalculated
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the Estimated Total should be recalculated
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">21. Edit quantity using preset options in cart</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 379 |
+                        <strong>Steps:</strong> 14
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the quantity for the first product
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the quantity selector slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on "10 Tons" preset option
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Save button in the quantity slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the quantity should be updated to "10 Tons"
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the Estimated Total should be recalculated
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">22. Validate cart page elements for Delivery mode</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 400 |
+                        <strong>Steps:</strong> 20
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product image
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the quantity with expand arrow
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product price
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Remove link
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Order Summary section
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Subtotal in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Delivery Charges in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Tax in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Estimated Total in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Checkout button
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the "+ Add Items" link
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">23. Validate cart page elements for Pickup mode</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 423 |
+                        <strong>Steps:</strong> 22
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I switch to Pickup mode with primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I select a pickup facility
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the pickup facility name in header
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product image
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product name
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the quantity with expand arrow
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product price
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Remove link
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Order Summary section
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Subtotal in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Pickup Charges in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see "Select pickup slot in checkout" message
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Tax in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Estimated Total in Order Summary
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Checkout button
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">24. Validate cart with multiple products shows correct totals</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 448 |
+                        <strong>Steps:</strong> 14
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the second product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see 2 products in the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the Subtotal should be sum of all product prices
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                the Estimated Total should include Subtotal plus charges
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">25. Navigate to cart via header cart icon</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 469 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click the close button on the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on the cart icon in header
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product in the cart
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">26. Navigate to cart via View Cart button in slider</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 482 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product in the cart
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">27. Navigate back to PLP via Add Items link in cart</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 495 |
+                        <strong>Steps:</strong> 10
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I navigate to the Product Listing Page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on "+ Add Items" link
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">28. Navigate to PLP via Continue Shopping button from empty cart</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 512 |
+                        <strong>Steps:</strong> 9
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I navigate to the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see the empty cart message
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see "Your cart is empty" text
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see "Continue Shopping" button
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on "Continue Shopping" button
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see product tiles
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+                <div class="scenario-card failed" data-status="failed">
+                    <div class="scenario-header">
+                        <div class="scenario-name">29. Add product after clicking Continue Shopping from empty cart</div>
+                        <div class="scenario-status failed">✗ FAILED</div>
+                    </div>
+                    <div class="scenario-meta">
+                        <strong>Feature:</strong> Add to Cart Functionality | 
+                        <strong>Line:</strong> 524 |
+                        <strong>Steps:</strong> 14
+                    </div>
+
+                    <div class="steps-list">
+                        <strong style="display: block; margin-bottom: 15px; color: #333;">📋 Test Steps:</strong>
+
+                        <div class="step passed">
+                            <span class="step-icon">✓</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Given</span>
+                                I am logged in as a registered user
+                            </span>
+                        </div>
+
+                        <div class="step failed">
+                            <span class="step-icon">✗</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I clear all items from the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I navigate to the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should see the empty cart message
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click on "Continue Shopping" button
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the PLP page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I set delivery address using primary zipcode
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I hover over the cart icon on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I click Add to Cart on the first product tile
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                the cart confirmation slider should open
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">When</span>
+                                I click "View Cart" button in the slider
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">Then</span>
+                                I should be on the Cart page
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the product in the cart
+                            </span>
+                        </div>
+
+                        <div class="step skipped">
+                            <span class="step-icon">⊘</span>
+                            <span class="step-text">
+                                <span class="step-keyword">And</span>
+                                I should see the Order Summary section
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="error-message">
+                        <strong>❌ Error Details:</strong>
+                        ReferenceError: clickConfirmationRemoveButton is not defined
+    at World.<anonymous> (/Users/vivpanka/Documents/Vulcan/Automation/vulcan_ecomm_storefront_automation/Ecomm/features/step_definitions/addToCartSteps.js:282:13)
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Vulcan Materials E-Commerce Test Automation Suite</p>
+            <p>Add to Cart Feature - Comprehensive Test Coverage Report</p>
+        </div>
+    </div>
+    
+    <script>
+        function filterScenarios(status) {
+            const scenarios = document.querySelectorAll('.scenario-card');
+            const buttons = document.querySelectorAll('.filter-btn');
+            
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter scenarios
+            scenarios.forEach(scenario => {
+                if (status === 'all' || scenario.dataset.status === status) {
+                    scenario.style.display = 'block';
+                } else {
+                    scenario.style.display = 'none';
+                }
+            });
+        }
+        
+        // Add smooth scroll to top button
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                if (!document.getElementById('scrollTop')) {
+                    const btn = document.createElement('button');
+                    btn.id = 'scrollTop';
+                    btn.innerHTML = '↑';
+                    btn.style.cssText = 'position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; transition: all 0.3s ease;';
+                    btn.onmouseover = () => btn.style.transform = 'scale(1.1)';
+                    btn.onmouseout = () => btn.style.transform = 'scale(1)';
+                    btn.onclick = () => window.scrollTo({top: 0, behavior: 'smooth'});
+                    document.body.appendChild(btn);
+                }
+            } else {
+                const btn = document.getElementById('scrollTop');
+                if (btn) btn.remove();
+            }
+        });
+    </script>
+</body>
+</html>
