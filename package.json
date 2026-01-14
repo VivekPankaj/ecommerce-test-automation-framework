@@ -5,10 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test:all": "npx cucumber-js --config .cucumber.json",
+    "test:sanity": "npx cucumber-js --tags @Sanity",
+    "test:regression": "npx cucumber-js --tags @Regression",
     "regression": "npx playwright test",
     "webTests": "npx playwright test --grep @Web",
     "APITests": "npx playwright test --grep @API",
-    "SafariNewConfig": "npx playwright test --config playwright.config1.js --project=safari"
+    "SafariNewConfig": "npx playwright test --config playwright.config1.js --project=safari",
+    "dashboard": "node dashboard/server.js",
+    "dashboard:dev": "nodemon dashboard/server.js",
+    "test:jira": "node utils/test-jira-connection.js",
+    "report": "node generate-report.js"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +29,11 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "exceljs": "^4.4.0"
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
   }
 }

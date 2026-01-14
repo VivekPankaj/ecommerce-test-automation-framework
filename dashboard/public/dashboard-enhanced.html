@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulcan E-Commerce Test Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .vulcan-gradient { background: linear-gradient(135deg, #003087 0%, #0066CC 100%); }
+        .vulcan-blue { color: #003087; }
+        .vulcan-blue-bg { background-color: #003087; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,48,135,0.2); }
+        .pulse-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .log-line { font-family: 'Courier New', monospace; font-size: 13px; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pass { background-color: #d4edda; color: #155724; border: 1px solid #28a745; }
+        .status-fail { background-color: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+        .status-running { background-color: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .status-ready { background-color: #d1ecf1; color: #0c5460; border: 1px solid #0066CC; }
+        .sidebar-item { transition: all 0.2s ease; }
+        .sidebar-item:hover { background-color: rgba(255,255,255,0.1); }
+        .sidebar-item.active { background-color: #0066CC; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+        const API_BASE = 'http://localhost:3001/api';
+
+        // ============ ICONS ============
+        const Icons = {
+            Dashboard: () => <span className="text-xl">⊞</span>,
+            Play: () => <span className="text-xl">▶</span>,
+            Bot: () => <span className="text-xl">🤖</span>,
+            Alert: () => <span className="text-xl">⚠</span>,
+            Chart: () => <span className="text-xl">📊</span>,
+            Check: () => <span className="text-xl">✓</span>,
+            X: () => <span className="text-xl">✗</span>,
+            Clock: () => <span className="text-xl">⏱</span>,
+            Upload: () => <span className="text-xl">📤</span>,
+            Download: () => <span className="text-xl">📥</span>,
+            External: () => <span className="text-xl">⧉</span>,
+        };
+
+        // ============ SIDEBAR ============
+        function Sidebar({ activeTab, onTabChange }) {
+            const menuItems = [
+                { id: 'modules', icon: Icons.Dashboard, label: 'Module Selection' },
+                { id: 'execution', icon: Icons.Play, label: 'Test Execution' },
+                { id: 'analytics', icon: Icons.Chart, label: 'Test Analytics' },
+                { id: 'ai', icon: Icons.Bot, label: 'AI Commander' },
+                { id: 'defects', icon: Icons.Alert, label: 'Defect Logger' },
+            ];
+
+            return (
+                <aside className="w-64 vulcan-blue-bg text-white flex flex-col shadow-xl">
+                    <div className="p-6 border-b border-blue-800">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                <span className="text-2xl font-bold vulcan-blue">V</span>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold">Vulcan</h2>
+                                <p className="text-xs text-blue-200">Test Dashboard</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <nav className="flex-1 p-4 space-y-2">
+                        {menuItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = activeTab === item.id;
+                            
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => onTabChange(item.id)}
+                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg sidebar-item ${
+                                        isActive ? 'active' : ''
+                                    }`}
+                                >
+                                    <Icon />
+                                    <span className="font-medium text-sm">{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
+                    
+                    <div className="p-4 border-t border-blue-800">
+                        <div className="text-xs text-blue-200 space-y-1">
+                            <p className="flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-green-400 rounded-full pulse-dot"></span>
+                                <span>Framework v1.0.0</span>
+                            </p>
+                            <p>Jira: Connected</p>
+                            <p>Environment: QA</p>
+                        </div>
+                    </div>
+                </aside>
+            );
+        }
+
+        // ============ HEADER ============
+        function Header() {
+            return (
+                <header className="vulcan-gradient text-white shadow-lg">
+                    <div className="px-6 py-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-2xl font-bold">Vulcan Materials</h1>
+                                <p className="text-blue-100 text-sm">E-Commerce Test Automation Dashboard</p>
+                            </div>
+                            <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-lg border border-white/20">
+                                <div className="w-2 h-2 bg-green-400 rounded-full pulse-dot"></div>
+                                <span className="text-sm">QA Environment</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+            );
+        }
+
+        // Continue in next message due to length...
+    </script>
+</body>
+</html>

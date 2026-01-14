@@ -67,7 +67,18 @@ class LoginPage {
 
     async submitLogin() {
         await this.signInSubmitBtn.click();
-        await this.page.waitForLoadState("networkidle");
+        
+        // Wait for My Account button to appear (indicates successful login)
+        try {
+            await this.myAccountBtn.waitFor({ state: 'visible', timeout: 15000 });
+            console.log('✓ Login successful - My Account button visible');
+        } catch (error) {
+            // Fallback: wait for network to settle
+            console.log('⚠️ My Account not visible, waiting for network idle...');
+            await this.page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {
+                console.log('⚠️ Network idle timeout, continuing...');
+            });
+        }
     }
 
     // Validation 1: Check if 'Sign In' changed to 'My Account'
@@ -338,43 +349,47 @@ class LoginPage {
         await this.closeBlockingModals();
         
         await this.signOutBtn.click();
+        // Wait for network to be idle after logout
         await this.page.waitForLoadState("networkidle");
-        await this.page.waitForTimeout(2000);
     }
 
     // Verify Sign In button is visible after logout
     async isSignInButtonVisible() {
         try {
-            // Wait for page to stabilize after logout
-            await this.page.waitForTimeout(2000);
+            console.log('Checking if Sign In button is visible after logout...');
             
-            // Try multiple selectors for Sign In button
+            // First, wait for My Account button to disappear (logout successful indicator)
+            try {
+                await this.myAccountBtn.waitFor({ state: 'hidden', timeout: 5000 });
+                console.log('✓ My Account button hidden (logout successful)');
+            } catch (error) {
+                console.log('⚠️ My Account button still visible or timeout');
+            }
+            
+            // Try multiple selectors for Sign In button with proper visibility waits
             const signInLocators = [
-                this.page.locator('span:has-text("Sign In")'),
-                this.page.locator('text=Sign In'),
-                this.page.locator('[class*="sign-in"], [class*="signin"]'),
-                this.page.locator('a:has-text("Sign In"), button:has-text("Sign In")')
+                { name: 'signInHeaderBtn (span)', locator: this.signInHeaderBtn },
+                { name: 'text=Sign In', locator: this.page.locator('text=Sign In') },
+                { name: 'span with Sign In', locator: this.page.locator('span:has-text("Sign In")').first() },
+                { name: 'button/a with Sign In', locator: this.page.locator('a:has-text("Sign In"), button:has-text("Sign In")').first() }
             ];
             
-            for (const locator of signInLocators) {
-                if (await locator.first().isVisible({ timeout: 2000 }).catch(() => false)) {
-                    console.log('✓ Sign In button is visible');
+            for (const { name, locator } of signInLocators) {
+                try {
+                    // Wait for element to be visible (no hardcoded timeout)
+                    await locator.waitFor({ state: 'visible', timeout: 5000 });
+                    console.log(`${name}: VISIBLE ✓`);
+                    console.log('✓ Sign In button is visible - logout verification PASSED');
                     return true;
+                } catch (e) {
+                    console.log(`${name}: Not visible or timeout - ${e.message}`);
                 }
             }
             
-            // Also verify My Account is NOT visible
-            const myAccountVisible = await this.myAccountBtn.isVisible({ timeout: 1000 }).catch(() => false);
-            if (!myAccountVisible) {
-                // My Account is hidden, which indicates logout was successful
-                // Check again for Sign In
-                const signInVisible = await this.signInHeaderBtn.isVisible({ timeout: 2000 }).catch(() => false);
-                return signInVisible;
-            }
-            
+            console.log('✗ Sign In button NOT found with any selector');
             return false;
         } catch (error) {
-            console.log(`Error checking Sign In visibility: ${error.message}`);
+            console.log(`Error in isSignInButtonVisible: ${error.message}`);
             return false;
         }
     }

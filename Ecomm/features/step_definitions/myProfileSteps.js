@@ -1,6 +1,7 @@
 const { Given, When, Then } = require('@cucumber/cucumber');
 const { MyProfilePage } = require('../../../pageobjects/MyProfilePage');
 const {LoginPage} = require('../../../pageobjects/LoginPage');
+const testData = require('../../../utils/testData.json');
 
 let myProfilePage;
 let loginPage;
@@ -11,8 +12,8 @@ Given('I am on My Profile page', async function () {
 	myProfilePage = new MyProfilePage(this.page);
 	await this.page.goto('https://qa-shop.vulcanmaterials.com/');
 	await loginPage.clickSignInCTA();
-	await loginPage.enterEmail('vivekpankaj@gmail.com');
-	await loginPage.enterPassword('S@p1ent2014');
+	await loginPage.enterEmail(testData.login.validUser.email);
+	await loginPage.enterPassword(testData.login.validUser.password);
 	await loginPage.submitLogin();
   await loginPage.openMyAccount()
   await myProfilePage.clickMyProfile();

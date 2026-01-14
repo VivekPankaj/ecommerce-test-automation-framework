@@ -173,51 +173,87 @@ const executionTimeSeconds = (totalDuration / 1000000000).toFixed(2);
 function generateModuleSummary() {
     const modules = Object.keys(moduleStats).sort();
     
-    return modules.map(moduleName => {
+    // Calculate totals
+    let totalScenarios = 0;
+    let totalPassed = 0;
+    let totalFailed = 0;
+    let totalDuration = 0;
+    
+    const tableRows = modules.map(moduleName => {
         const stats = moduleStats[moduleName];
         const passPercent = ((stats.passed / stats.total) * 100).toFixed(1);
         const failPercent = ((stats.failed / stats.total) * 100).toFixed(1);
-        const statusClass = stats.failed > 0 ? 'module-failed' : 'module-passed';
-        
+        const statusIcon = stats.failed > 0 ? '❌' : '✅';
+        const statusClass = stats.failed > 0 ? 'status-failed' : 'status-passed';
         const moduleTime = formatDuration(stats.duration);
         
+        // Accumulate totals
+        totalScenarios += stats.total;
+        totalPassed += stats.passed;
+        totalFailed += stats.failed;
+        totalDuration += stats.duration;
+        
         return `
-        <div class="module-card ${statusClass}" onclick="scrollToModule('${moduleName}')">
-            <div class="module-header">
-                <h3 class="module-name">📦 ${moduleName}</h3>
-                <span class="module-status ${stats.failed > 0 ? 'failed' : 'passed'}">
-                    ${stats.failed > 0 ? '❌' : '✅'}
-                </span>
-            </div>
-            <div class="module-stats">
-                <div class="module-stat">
-                    <span class="stat-label">Total:</span>
-                    <span class="stat-value">${stats.total}</span>
-                </div>
-                <div class="module-stat passed">
-                    <span class="stat-label">Passed:</span>
-                    <span class="stat-value">${stats.passed} (${passPercent}%)</span>
-                </div>
-                ${stats.failed > 0 ? `
-                <div class="module-stat failed">
-                    <span class="stat-label">Failed:</span>
-                    <span class="stat-value">${stats.failed} (${failPercent}%)</span>
-                </div>
-                ` : ''}
-                <div class="module-stat">
-                    <span class="stat-label">⏱️ Time:</span>
-                    <span class="stat-value">${moduleTime}</span>
-                </div>
-            </div>
-            <div class="module-progress">
+        <tr class="module-row ${statusClass}" onclick="scrollToModule('${moduleName}')">
+            <td class="module-name-cell">📦 ${moduleName}</td>
+            <td class="status-cell">${statusIcon}</td>
+            <td class="numeric-cell">${stats.total}</td>
+            <td class="numeric-cell passed-text">${stats.passed}</td>
+            <td class="numeric-cell failed-text">${stats.failed}</td>
+            <td class="numeric-cell">${passPercent}%</td>
+            <td class="time-cell">${moduleTime}</td>
+            <td class="progress-cell">
                 <div class="progress-bar-mini">
                     <div class="progress-fill passed" style="width: ${passPercent}%"></div>
                     <div class="progress-fill failed" style="width: ${failPercent}%"></div>
                 </div>
-            </div>
-        </div>
+            </td>
+        </tr>
         `;
     }).join('');
+    
+    // Calculate overall pass rate
+    const overallPassRate = ((totalPassed / totalScenarios) * 100).toFixed(1);
+    const overallFailRate = ((totalFailed / totalScenarios) * 100).toFixed(1);
+    const totalTime = formatDuration(totalDuration);
+    const overallStatus = totalFailed > 0 ? '❌' : '✅';
+    
+    return `
+    <table class="module-summary-table">
+        <thead>
+            <tr>
+                <th>Module</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Passed</th>
+                <th>Failed</th>
+                <th>Pass Rate</th>
+                <th>Time</th>
+                <th>Progress</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+        <tfoot>
+            <tr class="totals-row">
+                <td class="module-name-cell"><strong>📊 TOTAL</strong></td>
+                <td class="status-cell">${overallStatus}</td>
+                <td class="numeric-cell"><strong>${totalScenarios}</strong></td>
+                <td class="numeric-cell passed-text"><strong>${totalPassed}</strong></td>
+                <td class="numeric-cell failed-text"><strong>${totalFailed}</strong></td>
+                <td class="numeric-cell"><strong>${overallPassRate}%</strong></td>
+                <td class="time-cell"><strong>${totalTime}</strong></td>
+                <td class="progress-cell">
+                    <div class="progress-bar-mini">
+                        <div class="progress-fill passed" style="width: ${overallPassRate}%"></div>
+                        <div class="progress-fill failed" style="width: ${overallFailRate}%"></div>
+                    </div>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+    `;
 }
 
 // Generate module details HTML
@@ -394,63 +430,87 @@ const htmlReport = `
             border-bottom: 3px solid #003087;
             font-weight: 600;
         }
-        .modules-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+        
+        /* Table-based Module Summary */
+        .module-summary-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
-        }
-        .module-card {
             background: white;
-            border: 2px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border-radius: 8px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            overflow: hidden;
         }
-        .module-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        .module-summary-table thead {
+            background: #003087;
+            color: white;
         }
-        .module-card.module-passed {
-            border-left: 5px solid #28a745;
-        }
-        .module-card.module-failed {
-            border-left: 5px solid #dc3545;
-        }
-        .module-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .module-name {
-            color: #003087;
-            font-size: 1.1em;
+        .module-summary-table th {
+            padding: 12px 15px;
+            text-align: left;
             font-weight: 600;
+            font-size: 0.95em;
         }
-        .module-status {
-            font-size: 1.5em;
+        .module-summary-table th:nth-child(2),
+        .module-summary-table th:nth-child(3),
+        .module-summary-table th:nth-child(4),
+        .module-summary-table th:nth-child(5),
+        .module-summary-table th:nth-child(6) {
+            text-align: center;
         }
-        .module-stats {
-            margin: 15px 0;
+        .module-summary-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .module-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
+        .module-summary-table tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+        }
+        .module-summary-table tbody tr.status-passed {
+            border-left: 4px solid #28a745;
+        }
+        .module-summary-table tbody tr.status-failed {
+            border-left: 4px solid #dc3545;
+        }
+        .module-summary-table td {
+            padding: 12px 15px;
             font-size: 0.9em;
         }
-        .module-stat.passed { color: #28a745; }
-        .module-stat.failed { color: #dc3545; }
-        .stat-label { font-weight: 600; }
+        .module-name-cell {
+            font-weight: 600;
+            color: #003087;
+            min-width: 180px;
+        }
+        .status-cell {
+            text-align: center;
+            font-size: 1.3em;
+        }
+        .numeric-cell {
+            text-align: center;
+            font-weight: 500;
+        }
+        .passed-text {
+            color: #28a745;
+        }
+        .failed-text {
+            color: #dc3545;
+        }
+        .time-cell {
+            text-align: center;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+        .progress-cell {
+            width: 150px;
+            padding: 12px 20px;
+        }
         .progress-bar-mini {
             height: 8px;
             background: #e9ecef;
             border-radius: 4px;
             overflow: hidden;
             display: flex;
-            margin-top: 10px;
         }
         .progress-fill {
             height: 100%;
@@ -458,6 +518,25 @@ const htmlReport = `
         }
         .progress-fill.passed { background: #28a745; }
         .progress-fill.failed { background: #dc3545; }
+        
+        /* Totals Footer Row */
+        .module-summary-table tfoot {
+            background: #f8f9fa;
+            border-top: 3px solid #003087;
+        }
+        .module-summary-table tfoot tr.totals-row {
+            font-weight: 700;
+            font-size: 1.05em;
+            cursor: default;
+        }
+        .module-summary-table tfoot tr.totals-row:hover {
+            background: #f8f9fa;
+            transform: none;
+        }
+        .module-summary-table tfoot td {
+            padding: 15px;
+            color: #003087;
+        }
         
         .module-section {
             padding: 30px;
@@ -694,9 +773,7 @@ const htmlReport = `
 
         <div class="executive-summary">
             <h2>📊 Executive Summary - Module Status</h2>
-            <div class="modules-grid">
-                ${generateModuleSummary()}
-            </div>
+            ${generateModuleSummary()}
         </div>
 
         ${generateModuleDetails()}
@@ -735,6 +812,9 @@ const htmlReport = `
         function scrollToModule(moduleName) {
             const moduleId = 'module-' + moduleName.replace(/\s+/g, '-');
             const moduleElement = document.getElementById(moduleId);
+            console.log('Attempting to scroll to:', moduleName, '→ ID:', moduleId);
+            console.log('Element found:', moduleElement);
+            
             if (moduleElement) {
                 moduleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 // Highlight the module briefly
@@ -742,6 +822,11 @@ const htmlReport = `
                 setTimeout(() => {
                     moduleElement.style.backgroundColor = '';
                 }, 2000);
+            } else {
+                console.error('Module element not found for ID:', moduleId);
+                // Fallback: try to find by partial match
+                const allModules = document.querySelectorAll('.module-section');
+                console.log('Available modules:', Array.from(allModules).map(m => m.id));
             }
         }
         

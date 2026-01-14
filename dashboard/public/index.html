@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulcan E-Commerce Test Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .vulcan-gradient { background: linear-gradient(135deg, #003087 0%, #0066CC 100%); }
+        .vulcan-blue { color: #003087; }
+        .vulcan-blue-bg { background-color: #003087; }
+        .vulcan-blue-light { background-color: #0066CC; }
+        .vulcan-border { border-color: #003087; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,48,135,0.2); }
+        .pulse-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .log-line { font-family: 'Courier New', monospace; font-size: 13px; }
+        .modal-backdrop { backdrop-filter: blur(4px); }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pass { background-color: #d4edda; color: #155724; border: 1px solid #28a745; }
+        .status-fail { background-color: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+        .status-running { background-color: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+        .status-ready { background-color: #d1ecf1; color: #0c5460; border: 1px solid #0066CC; }
+        .status-passed { background-color: #d4edda; color: #155724; border: 1px solid #28a745; }
+        .status-failed { background-color: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+        }
+        .vulcan-button {
+            background: linear-gradient(135deg, #003087 0%, #0066CC 100%);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .vulcan-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0066CC 0%, #003087 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,48,135,0.3);
+        }
+        .vulcan-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // API Base URL
+        const API_BASE = 'http://localhost:3001/api';
+
+        // ============ SIDEBAR COMPONENT ============
+        function Sidebar({ activeTab, onTabChange }) {
+            const menuItems = [
+                { id: 'modules', label: 'Modules', icon: '⊞' },
+                { id: 'execution', label: 'Execution', icon: '▶' },
+                { id: 'analytics', label: 'Analytics', icon: '📊' },
+                { id: 'report', label: 'Executive Report', icon: '📋' },
+                { id: 'ai', label: 'AI Commander', icon: '🤖' },
+                { id: 'defects', label: 'Defects', icon: '⚠' },
+            ];
+
+            return (
+                <aside className="w-64 vulcan-blue-bg text-white flex flex-col shadow-xl">
+                    <div className="p-6 border-b border-blue-800">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                <span className="text-2xl font-bold vulcan-blue">V</span>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold">Vulcan</h2>
+                                <p className="text-xs text-blue-200">Test Dashboard</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <nav className="flex-1 p-4 space-y-2">
+                        {menuItems.map((item) => {
+                            const isActive = activeTab === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => onTabChange(item.id)}
+                                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+                                        isActive 
+                                            ? 'bg-blue-600' 
+                                            : 'hover:bg-blue-700/50'
+                                    }`}
+                                >
+                                    <span className="text-xl">{item.icon}</span>
+                                    <span className="font-medium text-sm">{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
+                    
+                    <div className="p-4 border-t border-blue-800">
+                        <div className="text-xs text-blue-200 space-y-1">
+                            <p className="flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-green-400 rounded-full pulse-dot"></span>
+                                <span>Framework v1.0.0</span>
+                            </p>
+                            <p>Jira: Connected</p>
+                            <p>Environment: QA</p>
+                        </div>
+                    </div>
+                </aside>
+            );
+        }
+
+        // ============ HEADER COMPONENT ============
+        function Header() {
+            return (
+                <header className="vulcan-gradient text-white shadow-lg">
+                    <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                                <span className="text-2xl font-bold vulcan-blue">V</span>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold">Vulcan Materials</h1>
+                                <p className="text-blue-100 text-sm">E-Commerce Test Automation Dashboard</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-lg border border-white/20">
+                                <div className="w-2 h-2 bg-green-400 rounded-full pulse-dot"></div>
+                                <span className="text-sm">QA Environment</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+            );
+        }
+
+        // ============ MODULES TAB COMPONENT ============
+        function ModulesTab({ modules, stats, loading, onRunTests, onViewScenarios }) {
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-600 font-semibold">Loading modules...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Stats Section */}
+                    {stats && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-400">
+                                <div className="text-gray-500 text-xs mb-2 font-semibold">TOTAL MODULES</div>
+                                <div className="text-3xl font-bold text-gray-800">{stats.totalModules}</div>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-700">
+                                <div className="text-gray-500 text-xs mb-2 font-semibold">TOTAL SCENARIOS</div>
+                                <div className="text-3xl font-bold vulcan-blue">{stats.totalScenarios}</div>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                                <div className="text-gray-500 text-xs mb-2 font-semibold">JIRA STORIES</div>
+                                <div className="text-3xl font-bold text-blue-600">{stats.totalJiraStories}</div>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                                <div className="text-gray-500 text-xs mb-2 font-semibold">PRIORITY BREAKDOWN</div>
+                                <div className="flex space-x-2 mt-2">
+                                    <span className="text-sm font-bold text-red-600">P1: {stats.priorityBreakdown.p1}</span>
+                                    <span className="text-sm font-bold text-orange-600">P2: {stats.priorityBreakdown.p2}</span>
+                                    <span className="text-sm font-bold text-green-600">P3: {stats.priorityBreakdown.p3}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modules Grid */}
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Test Modules</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {modules.map(module => (
+                            <ModuleCard 
+                                key={module.id}
+                                module={module}
+                                onRunTests={onRunTests}
+                                onViewScenarios={onViewScenarios}
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ MODULE CARD COMPONENT ============
+        function ModuleCard({ module, onRunTests, onViewScenarios }) {
+            const priorityColors = {
+                p1: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-700', dot: 'bg-red-500' },
+                p2: { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-700', dot: 'bg-orange-500' },
+                p3: { bg: 'bg-green-50', border: 'border-green-500', text: 'text-green-700', dot: 'bg-green-500' }
+            };
+
+            const statusColors = {
+                ready: 'status-ready',
+                'in-progress': 'status-running',
+                'not-started': 'bg-gray-100 text-gray-700 border border-gray-300'
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-md p-6 card-hover border-l-4 border-blue-700">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">{module.name}</h3>
+                            <p className="text-gray-600 text-sm">{module.description}</p>
+                        </div>
+                        <span className={`status-badge ${statusColors[module.status]}`}>
+                            {module.status}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div className="text-gray-500 text-xs mb-1 font-semibold">TEST SCENARIOS</div>
+                            <div className="text-2xl font-bold text-gray-800">{module.scenarioCount}</div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <div className="text-blue-700 text-xs mb-1 font-semibold">JIRA STORIES</div>
+                            <div className="text-2xl font-bold text-blue-700">
+                                <a href={`https://vulcanmaterials.atlassian.net/issues/?filter=16283`} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   className="hover:underline">
+                                    {module.jiraStoryCount}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {Object.entries(module.priorityCounts).map(([priority, count]) => {
+                            const colors = priorityColors[priority];
+                            return count > 0 ? (
+                                <div key={priority} 
+                                     className={`flex items-center space-x-2 px-3 py-1 rounded-lg border ${colors.bg} ${colors.border}`}>
+                                    <div className={`w-2 h-2 rounded-full ${colors.dot}`}></div>
+                                    <span className={`text-sm font-semibold ${colors.text}`}>
+                                        {priority.toUpperCase()}: {count}
+                                    </span>
+                                </div>
+                            ) : null;
+                        })}
+                    </div>
+
+                    <div className="flex space-x-2">
+                        <button 
+                            onClick={() => onRunTests(module)}
+                            className="flex-1 vulcan-blue-bg hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <span>▶</span>
+                            <span>RUN TESTS</span>
+                        </button>
+                        <button 
+                            onClick={() => onViewScenarios(module)}
+                            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <span>⊙</span>
+                            <span>VIEW SCENARIOS</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ SCENARIO MODAL COMPONENT ============
+        function ScenarioModal({ module, onClose, onRun }) {
+            const [selectedPriority, setSelectedPriority] = useState('ALL');
+            const [selectedScenarios, setSelectedScenarios] = useState(new Set());
+
+            const filteredScenarios = selectedPriority === 'ALL' 
+                ? module.scenarios 
+                : module.scenarios.filter(s => s.priority === selectedPriority);
+
+            const priorityCounts = {
+                ALL: module.scenarios.length,
+                P1: module.priorityCounts.p1,
+                P2: module.priorityCounts.p2,
+                P3: module.priorityCounts.p3
+            };
+
+            const toggleScenario = (scenarioName) => {
+                const newSelected = new Set(selectedScenarios);
+                if (newSelected.has(scenarioName)) {
+                    newSelected.delete(scenarioName);
+                } else {
+                    newSelected.add(scenarioName);
+                }
+                setSelectedScenarios(newSelected);
+            };
+
+            const selectAll = () => {
+                setSelectedScenarios(new Set(filteredScenarios.map(s => s.name)));
+            };
+
+            const deselectAll = () => {
+                setSelectedScenarios(new Set());
+            };
+
+            const handleRun = () => {
+                onRun(module.id, Array.from(selectedScenarios));
+                onClose();
+            };
+
+            const priorityColors = {
+                ALL: 'bg-gray-100 border-gray-500 text-gray-700',
+                P1: 'bg-red-50 border-red-500 text-red-700',
+                P2: 'bg-orange-50 border-orange-500 text-orange-700',
+                P3: 'bg-green-50 border-green-500 text-green-700'
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/50 modal-backdrop flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+                        {/* Header */}
+                        <div className="vulcan-gradient text-white p-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold">{module.name}</h2>
+                                    <p className="text-gray-300 mt-1">Select scenarios to execute</p>
+                                </div>
+                                <button onClick={onClose} 
+                                        className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
+                                    <span className="text-2xl">×</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Priority Filter */}
+                        <div className="p-6 border-b border-gray-200 bg-gray-50">
+                            <div className="flex space-x-2">
+                                {['ALL', 'P1', 'P2', 'P3'].map(priority => (
+                                    <button
+                                        key={priority}
+                                        onClick={() => setSelectedPriority(priority)}
+                                        className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all ${
+                                            selectedPriority === priority 
+                                                ? priorityColors[priority] 
+                                                : 'bg-white border-gray-300 text-gray-600 hover:border-blue-400'
+                                        }`}>
+                                        {priority} ({priorityCounts[priority]})
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Scenarios List */}
+                        <div className="p-6 overflow-y-auto" style={{maxHeight: '400px'}}>
+                            <div className="flex justify-between mb-4">
+                                <button onClick={selectAll} 
+                                        className="vulcan-blue hover:text-blue-800 font-semibold text-sm">
+                                    SELECT ALL ({filteredScenarios.length})
+                                </button>
+                                <button onClick={deselectAll} 
+                                        className="text-gray-600 hover:text-gray-700 font-semibold text-sm">
+                                    DESELECT ALL
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {filteredScenarios.map((scenario, idx) => {
+                                    const isSelected = selectedScenarios.has(scenario.name);
+                                    const colors = {
+                                        P1: 'border-red-200 bg-red-50',
+                                        P2: 'border-orange-200 bg-orange-50',
+                                        P3: 'border-green-200 bg-green-50'
+                                    };
+
+                                    return (
+                                        <div key={idx} 
+                                             className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                                 isSelected 
+                                                     ? 'border-blue-500 bg-blue-50' 
+                                                     : colors[scenario.priority] + ' hover:border-blue-300'
+                                             }`}
+                                             onClick={() => toggleScenario(scenario.name)}>
+                                            <div className="flex items-start space-x-3">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isSelected}
+                                                    onChange={() => toggleScenario(scenario.name)}
+                                                    className="mt-1 w-5 h-5 text-blue-600 rounded"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2 mb-1">
+                                                        <span className="font-semibold text-gray-800">{scenario.name}</span>
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                                                            scenario.priority === 'P1' ? 'bg-red-100 text-red-700' :
+                                                            scenario.priority === 'P2' ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-green-100 text-green-700'
+                                                        }`}>
+                                                            {scenario.priority}
+                                                        </span>
+                                                    </div>
+                                                    {scenario.description && (
+                                                        <p className="text-gray-600 text-sm">{scenario.description}</p>
+                                                    )}
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {scenario.tags.map((tag, i) => (
+                                                            <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 border-t border-gray-200 bg-gray-50">
+                            <div className="flex justify-between items-center">
+                                <div className="text-gray-600">
+                                    <span className="font-semibold">{selectedScenarios.size}</span> scenarios selected
+                                </div>
+                                <div className="flex space-x-3">
+                                    <button onClick={onClose} 
+                                            className="px-6 py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors">
+                                        CANCEL
+                                    </button>
+                                    <button onClick={handleRun}
+                                            disabled={selectedScenarios.size === 0}
+                                            className={`px-6 py-2 font-semibold rounded-lg transition-colors ${
+                                                selectedScenarios.size > 0 
+                                                    ? 'vulcan-blue-bg hover:bg-blue-700 text-white' 
+                                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            }`}>
+                                        RUN {selectedScenarios.size} TEST{selectedScenarios.size !== 1 ? 'S' : ''}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ EXECUTION TAB COMPONENT ============
+        function ExecutionTab({ executionId }) {
+            if (!executionId) {
+                return (
+                    <div className="max-w-7xl mx-auto px-6 py-8">
+                        <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                            <div className="text-6xl mb-4">▶</div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">No Active Execution</h2>
+                            <p className="text-gray-600 mb-6">Select a module from the Modules tab to start test execution</p>
+                            <button className="vulcan-button px-6 py-3 rounded-lg font-semibold">
+                                Go to Modules
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="h-full">
+                    <ExecutionPanel executionId={executionId} onClose={null} fullScreen={true} />
+                </div>
+            );
+        }
+
+        // ============ ANALYTICS TAB COMPONENT ============
+        function AnalyticsTab() {
+            const [history, setHistory] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [filter, setFilter] = useState({ status: 'all', module: 'all' });
+            const [selectedExecution, setSelectedExecution] = useState(null);
+
+            useEffect(() => {
+                loadHistory();
+            }, []);
+
+            const loadHistory = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/tests/history`);
+                    const data = await response.json();
+                    setHistory(data.history || []);
+                } catch (error) {
+                    console.error('Error loading history:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const filteredHistory = history.filter(exec => {
+                if (filter.status !== 'all' && exec.status !== filter.status) return false;
+                if (filter.module !== 'all' && !exec.modules.includes(filter.module)) return false;
+                return true;
+            });
+
+            const stats = {
+                total: history.length,
+                passed: history.filter(e => e.status === 'completed' && e.result?.failed === 0).length,
+                failed: history.filter(e => e.status === 'completed' && e.result?.failed > 0).length,
+                running: history.filter(e => e.status === 'running').length
+            };
+
+            const passRate = stats.total > 0 ? ((stats.passed / stats.total) * 100).toFixed(1) : 0;
+
+            const downloadReport = () => {
+                const dataStr = JSON.stringify(history, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `test-analytics-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-600 font-semibold">Loading analytics...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-400">
+                            <div className="text-gray-500 text-xs mb-2 font-semibold">TOTAL EXECUTIONS</div>
+                            <div className="text-3xl font-bold text-gray-800">{stats.total}</div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                            <div className="text-gray-500 text-xs mb-2 font-semibold">PASSED</div>
+                            <div className="text-3xl font-bold text-green-600">{stats.passed}</div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                            <div className="text-gray-500 text-xs mb-2 font-semibold">FAILED</div>
+                            <div className="text-3xl font-bold text-red-600">{stats.failed}</div>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-700">
+                            <div className="text-gray-500 text-xs mb-2 font-semibold">PASS RATE</div>
+                            <div className="text-3xl font-bold vulcan-blue">{passRate}%</div>
+                        </div>
+                    </div>
+
+                    {/* Filters and Actions */}
+                    <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center space-x-4">
+                                <div>
+                                    <label className="text-xs text-gray-500 font-semibold mb-1 block">STATUS</label>
+                                    <select 
+                                        value={filter.status}
+                                        onChange={(e) => setFilter({...filter, status: e.target.value})}
+                                        className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                    >
+                                        <option value="all">All Status</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="running">Running</option>
+                                        <option value="failed">Failed</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 font-semibold mb-1 block">MODULE</label>
+                                    <select 
+                                        value={filter.module}
+                                        onChange={(e) => setFilter({...filter, module: e.target.value})}
+                                        className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                    >
+                                        <option value="all">All Modules</option>
+                                        {[...new Set(history.flatMap(e => e.modules))].map(mod => (
+                                            <option key={mod} value={mod}>{mod}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={downloadReport}
+                                className="vulcan-button px-6 py-2 rounded-lg font-semibold flex items-center space-x-2"
+                            >
+                                <span>↓</span>
+                                <span>Download Report</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Execution History Table */}
+                    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4">
+                            <h2 className="text-xl font-bold">Execution History</h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Modules</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Results</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Started</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredHistory.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                No execution history found
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredHistory.map(exec => (
+                                            <tr 
+                                                key={exec.id}
+                                                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                                                onClick={() => setSelectedExecution(exec)}
+                                            >
+                                                <td className="px-6 py-4 text-sm text-gray-800 font-mono">{exec.id.slice(0, 8)}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-800">
+                                                    {exec.modules.join(', ')}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {exec.status === 'completed' && exec.result?.failed === 0 && (
+                                                        <span className="status-badge status-passed">PASSED</span>
+                                                    )}
+                                                    {exec.status === 'completed' && exec.result?.failed > 0 && (
+                                                        <span className="status-badge status-failed">FAILED</span>
+                                                    )}
+                                                    {exec.status === 'running' && (
+                                                        <span className="status-badge status-running">RUNNING</span>
+                                                    )}
+                                                    {exec.status === 'failed' && (
+                                                        <span className="status-badge status-failed">ERROR</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {exec.duration ? `${Math.round(exec.duration / 1000)}s` : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm">
+                                                    {exec.result && (
+                                                        <span className="text-gray-600">
+                                                            <span className="text-green-600 font-semibold">{exec.result.passed}</span>
+                                                            {' / '}
+                                                            <span className="text-red-600 font-semibold">{exec.result.failed}</span>
+                                                            {' / '}
+                                                            <span className="text-gray-500">{exec.result.total}</span>
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {new Date(exec.startTime).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Execution Details Modal */}
+                    {selectedExecution && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+                                <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4 flex justify-between items-center">
+                                    <h2 className="text-xl font-bold">Execution Details</h2>
+                                    <button 
+                                        onClick={() => setSelectedExecution(null)}
+                                        className="text-2xl hover:text-gray-200"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div>
+                                            <div className="text-xs text-gray-500 font-semibold mb-1">EXECUTION ID</div>
+                                            <div className="text-sm font-mono text-gray-800">{selectedExecution.id}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 font-semibold mb-1">STATUS</div>
+                                            <div className="text-sm text-gray-800">{selectedExecution.status}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 font-semibold mb-1">STARTED</div>
+                                            <div className="text-sm text-gray-800">
+                                                {new Date(selectedExecution.startTime).toLocaleString()}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-500 font-semibold mb-1">DURATION</div>
+                                            <div className="text-sm text-gray-800">
+                                                {selectedExecution.duration ? `${Math.round(selectedExecution.duration / 1000)}s` : '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mb-4">
+                                        <div className="text-xs text-gray-500 font-semibold mb-2">MODULES</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedExecution.modules.map(mod => (
+                                                <span key={mod} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm">
+                                                    {mod}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {selectedExecution.result && (
+                                        <div className="border-t pt-4">
+                                            <div className="text-xs text-gray-500 font-semibold mb-2">RESULTS</div>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <div className="bg-green-50 rounded-lg p-4 text-center">
+                                                    <div className="text-2xl font-bold text-green-600">
+                                                        {selectedExecution.result.passed}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 mt-1">Passed</div>
+                                                </div>
+                                                <div className="bg-red-50 rounded-lg p-4 text-center">
+                                                    <div className="text-2xl font-bold text-red-600">
+                                                        {selectedExecution.result.failed}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 mt-1">Failed</div>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                                                    <div className="text-2xl font-bold text-gray-600">
+                                                        {selectedExecution.result.total}
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 mt-1">Total</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ============ EXECUTIVE REPORT TAB COMPONENT ============
+        function ExecutiveReportTab() {
+            const [reportData, setReportData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                loadReportData();
+            }, []);
+
+            const loadReportData = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/tests/history`);
+                    const data = await response.json();
+                    
+                    // Get the most recent completed execution
+                    const recentExecution = data.history?.find(e => e.status === 'completed' && e.result);
+                    
+                    if (recentExecution) {
+                        // Transform to report format
+                        const report = {
+                            timestamp: new Date(recentExecution.startTime).toLocaleString(),
+                            duration: recentExecution.duration,
+                            summary: {
+                                total: recentExecution.result.total || 0,
+                                passed: recentExecution.result.passed || 0,
+                                failed: recentExecution.result.failed || 0,
+                                passRate: recentExecution.result.total > 0 
+                                    ? ((recentExecution.result.passed / recentExecution.result.total) * 100).toFixed(1)
+                                    : 0
+                            },
+                            modules: recentExecution.modules || [],
+                            executionId: recentExecution.id
+                        };
+                        setReportData(report);
+                    }
+                } catch (error) {
+                    console.error('Error loading report data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const exportToPDF = () => {
+                alert('PDF export functionality coming soon!');
+            };
+
+            const exportToExcel = () => {
+                alert('Excel export functionality coming soon!');
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-700 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-600 font-semibold">Loading executive report...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!reportData) {
+                return (
+                    <div className="max-w-7xl mx-auto px-6 py-8">
+                        <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                            <div className="text-6xl mb-4">📋</div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">No Report Data Available</h2>
+                            <p className="text-gray-600 mb-6">Run tests from the Modules tab to generate an executive report</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white">
+                        <div className="max-w-7xl mx-auto px-6 py-12 text-center">
+                            <h1 className="text-4xl font-bold mb-2">Vulcan E-Commerce Test Execution Report</h1>
+                            <h2 className="text-2xl font-light mb-4">Quality Assurance Dashboard</h2>
+                            <p className="text-gray-200">Last Execution: {reportData.timestamp}</p>
+                        </div>
+                    </div>
+
+                    {/* Export Buttons */}
+                    <div className="bg-white border-b border-gray-200">
+                        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end space-x-3">
+                            <button 
+                                onClick={exportToPDF}
+                                className="vulcan-button px-6 py-2 rounded-lg font-semibold flex items-center space-x-2"
+                            >
+                                <span>📄</span>
+                                <span>Export PDF</span>
+                            </button>
+                            <button 
+                                onClick={exportToExcel}
+                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold flex items-center space-x-2 transition-all"
+                            >
+                                <span>📊</span>
+                                <span>Export Excel</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div className="max-w-7xl mx-auto px-6 py-8">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-700">
+                                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">
+                                    Total Scenarios
+                                </h3>
+                                <div className="text-4xl font-bold vulcan-blue">{reportData.summary.total}</div>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">
+                                    Passed
+                                </h3>
+                                <div className="text-4xl font-bold text-green-600">{reportData.summary.passed}</div>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+                                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">
+                                    Failed
+                                </h3>
+                                <div className="text-4xl font-bold text-red-600">{reportData.summary.failed}</div>
+                            </div>
+                            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-700">
+                                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-2">
+                                    Pass Rate
+                                </h3>
+                                <div className="text-4xl font-bold vulcan-blue">{reportData.summary.passRate}%</div>
+                            </div>
+                        </div>
+
+                        {/* Executive Summary */}
+                        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
+                            <h2 className="text-2xl font-bold vulcan-blue mb-4 pb-3 border-b-2 border-blue-700">
+                                Executive Summary
+                            </h2>
+                            <div className="space-y-4 text-gray-700">
+                                <p className="leading-relaxed">
+                                    <strong>Test Execution Overview:</strong> The Vulcan E-Commerce platform underwent comprehensive automated 
+                                    testing across {reportData.modules.length} critical modules. This report provides a detailed analysis of 
+                                    {reportData.summary.total} test scenarios executed during the most recent test run.
+                                </p>
+                                <p className="leading-relaxed">
+                                    <strong>Key Findings:</strong> The test suite achieved a pass rate of <strong className="vulcan-blue">
+                                    {reportData.summary.passRate}%</strong>, with {reportData.summary.passed} scenarios passing and {reportData.summary.failed} 
+                                    scenarios failing. This indicates {reportData.summary.passRate >= 90 ? 'excellent' : reportData.summary.passRate >= 75 ? 'good' : 'needs attention'} 
+                                    {' '}quality standards for the current build.
+                                </p>
+                                <p className="leading-relaxed">
+                                    <strong>Test Coverage:</strong> The automated test suite covers end-to-end user journeys including product 
+                                    browsing, cart management, checkout flows, payment processing, and account management. All critical business 
+                                    functions have been validated against expected behaviors.
+                                </p>
+                                {reportData.summary.failed > 0 && (
+                                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mt-4">
+                                        <p className="text-red-800">
+                                            <strong>⚠ Action Required:</strong> {reportData.summary.failed} test scenario(s) failed and require 
+                                            immediate attention. Review the detailed results in the Analytics tab for failure analysis.
+                                        </p>
+                                    </div>
+                                )}
+                                {reportData.summary.passRate === 100 && (
+                                    <div className="bg-green-50 border-l-4 border-green-500 p-4 mt-4">
+                                        <p className="text-green-800">
+                                            <strong>✓ All Tests Passed:</strong> Congratulations! All test scenarios passed successfully. 
+                                            The build is ready for the next stage of the deployment pipeline.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Module Summary Table */}
+                        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                            <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4">
+                                <h2 className="text-xl font-bold">Module Execution Summary</h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Module Name</th>
+                                            <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {reportData.modules.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="3" className="px-6 py-12 text-center text-gray-500">
+                                                    No module data available
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            reportData.modules.map((module, idx) => (
+                                                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                                                    <td className="px-6 py-4 text-sm text-gray-600">{idx + 1}</td>
+                                                    <td className="px-6 py-4 text-sm text-gray-800 font-medium">{module}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="status-badge status-passed">COMPLETED</span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Execution Details */}
+                        <div className="bg-white rounded-xl shadow-md p-8 mt-8">
+                            <h2 className="text-2xl font-bold vulcan-blue mb-4 pb-3 border-b-2 border-blue-700">
+                                Execution Details
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Execution ID</h3>
+                                    <p className="text-gray-800 font-mono">{reportData.executionId}</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Execution Time</h3>
+                                    <p className="text-gray-800">{reportData.timestamp}</p>
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Duration</h3>
+                                    <p className="text-gray-800">
+                                        {reportData.duration ? `${Math.round(reportData.duration / 1000 / 60)} minutes` : 'N/A'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Environment</h3>
+                                    <p className="text-gray-800">QA - https://qa-shop.vulcanmaterials.com</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recommendations */}
+                        <div className="bg-white rounded-xl shadow-md p-8 mt-8">
+                            <h2 className="text-2xl font-bold vulcan-blue mb-4 pb-3 border-b-2 border-blue-700">
+                                Recommendations
+                            </h2>
+                            <ul className="space-y-3 text-gray-700">
+                                {reportData.summary.passRate === 100 ? (
+                                    <>
+                                        <li className="flex items-start">
+                                            <span className="text-green-600 mr-2">✓</span>
+                                            <span>All tests passed. Build is approved for deployment to staging environment.</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-green-600 mr-2">✓</span>
+                                            <span>Continue monitoring test stability and execution time trends.</span>
+                                        </li>
+                                    </>
+                                ) : reportData.summary.passRate >= 90 ? (
+                                    <>
+                                        <li className="flex items-start">
+                                            <span className="text-yellow-600 mr-2">⚠</span>
+                                            <span>Review and fix {reportData.summary.failed} failing test(s) before production deployment.</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-yellow-600 mr-2">⚠</span>
+                                            <span>Conditional approval for staging deployment with bug tracking.</span>
+                                        </li>
+                                    </>
+                                ) : (
+                                    <>
+                                        <li className="flex items-start">
+                                            <span className="text-red-600 mr-2">✗</span>
+                                            <span>Build requires immediate attention. {reportData.summary.failed} critical failures detected.</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-red-600 mr-2">✗</span>
+                                            <span>Deployment blocked until pass rate reaches 90% or higher.</span>
+                                        </li>
+                                        <li className="flex items-start">
+                                            <span className="text-red-600 mr-2">✗</span>
+                                            <span>Recommend root cause analysis meeting with development team.</span>
+                                        </li>
+                                    </>
+                                )}
+                                <li className="flex items-start">
+                                    <span className="text-blue-600 mr-2">ℹ</span>
+                                    <span>For detailed test logs and failure analysis, navigate to the Analytics tab.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ AI COMMANDER TAB COMPONENT ============
+        function AICommanderTab() {
+            const [command, setCommand] = useState('');
+            const [history, setHistory] = useState([]);
+            const [processing, setProcessing] = useState(false);
+
+            const exampleCommands = [
+                'Generate test scenarios for Cart module',
+                'Run all P1 tests',
+                'Analyze last execution failures',
+                'Create regression suite for Checkout',
+                'Find flaky tests in Search module'
+            ];
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!command.trim()) return;
+
+                const newEntry = {
+                    id: Date.now(),
+                    command: command,
+                    status: 'processing',
+                    timestamp: new Date()
+                };
+
+                setHistory([newEntry, ...history]);
+                setCommand('');
+                setProcessing(true);
+
+                // TODO: Implement AI command processing endpoint
+                setTimeout(() => {
+                    setHistory(prev => prev.map(entry => 
+                        entry.id === newEntry.id 
+                            ? { ...entry, status: 'completed', response: 'Feature coming soon! AI integration is in progress.' }
+                            : entry
+                    ));
+                    setProcessing(false);
+                }, 2000);
+            };
+
+            return (
+                <div className="max-w-5xl mx-auto px-6 py-8">
+                    {/* Header */}
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-gray-800 mb-2">AI Commander</h1>
+                        <p className="text-gray-600">Use natural language to generate tests, run executions, and analyze results</p>
+                    </div>
+
+                    {/* Command Input */}
+                    <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                        <form onSubmit={handleSubmit}>
+                            <div className="flex space-x-4">
+                                <input
+                                    type="text"
+                                    value={command}
+                                    onChange={(e) => setCommand(e.target.value)}
+                                    placeholder="Enter your command... (e.g., 'Generate test scenarios for Cart module')"
+                                    className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                    disabled={processing}
+                                />
+                                <button 
+                                    type="submit"
+                                    className="vulcan-button px-8 py-3 rounded-lg font-semibold flex items-center space-x-2"
+                                    disabled={processing || !command.trim()}
+                                >
+                                    {processing ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Processing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>→</span>
+                                            <span>Send</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+
+                        {/* Example Commands */}
+                        <div className="mt-4">
+                            <div className="text-xs text-gray-500 font-semibold mb-2">EXAMPLE COMMANDS</div>
+                            <div className="flex flex-wrap gap-2">
+                                {exampleCommands.map((example, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setCommand(example)}
+                                        className="px-3 py-1 bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-700 rounded-lg text-sm transition-colors"
+                                        disabled={processing}
+                                    >
+                                        {example}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Command History */}
+                    <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4">
+                            <h2 className="text-xl font-bold">Command History</h2>
+                        </div>
+                        <div className="p-6">
+                            {history.length === 0 ? (
+                                <div className="text-center py-12 text-gray-500">
+                                    <div className="text-5xl mb-4">🤖</div>
+                                    <p>No commands yet. Try sending one above!</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {history.map(entry => (
+                                        <div key={entry.id} className="border border-gray-200 rounded-lg p-4">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold text-gray-800 mb-1">
+                                                        {entry.command}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {entry.timestamp.toLocaleString()}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    {entry.status === 'processing' && (
+                                                        <span className="status-badge status-running">PROCESSING</span>
+                                                    )}
+                                                    {entry.status === 'completed' && (
+                                                        <span className="status-badge status-passed">COMPLETED</span>
+                                                    )}
+                                                    {entry.status === 'error' && (
+                                                        <span className="status-badge status-failed">ERROR</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {entry.response && (
+                                                <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                                                    <div className="text-sm text-gray-700">{entry.response}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ DEFECT LOGGER TAB COMPONENT ============
+        function DefectLoggerTab() {
+            const [formData, setFormData] = useState({
+                summary: '',
+                description: '',
+                module: '',
+                priority: 'P2',
+                screenshot: null
+            });
+            const [modules, setModules] = useState([]);
+            const [submitting, setSubmitting] = useState(false);
+            const [defects, setDefects] = useState([]);
+
+            useEffect(() => {
+                loadModules();
+            }, []);
+
+            const loadModules = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/modules`);
+                    const data = await response.json();
+                    setModules(data.modules || []);
+                } catch (error) {
+                    console.error('Error loading modules:', error);
+                }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setSubmitting(true);
+
+                // TODO: Implement Jira defect creation endpoint
+                setTimeout(() => {
+                    const newDefect = {
+                        id: Date.now(),
+                        ...formData,
+                        status: 'created',
+                        jiraId: `SHOP-${Math.floor(Math.random() * 10000)}`,
+                        createdAt: new Date()
+                    };
+                    setDefects([newDefect, ...defects]);
+                    setFormData({
+                        summary: '',
+                        description: '',
+                        module: '',
+                        priority: 'P2',
+                        screenshot: null
+                    });
+                    setSubmitting(false);
+                    alert('Defect created successfully! (Demo mode - Jira integration coming soon)');
+                }, 1500);
+            };
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setFormData({ ...formData, screenshot: file });
+                }
+            };
+
+            return (
+                <div className="max-w-6xl mx-auto px-6 py-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Defect Creation Form */}
+                        <div>
+                            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                                <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4">
+                                    <h2 className="text-xl font-bold">Create Defect</h2>
+                                </div>
+                                <form onSubmit={handleSubmit} className="p-6">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-semibold mb-1 block">SUMMARY *</label>
+                                            <input
+                                                type="text"
+                                                value={formData.summary}
+                                                onChange={(e) => setFormData({...formData, summary: e.target.value})}
+                                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                                placeholder="Brief description of the issue"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-semibold mb-1 block">DESCRIPTION *</label>
+                                            <textarea
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                                rows="4"
+                                                placeholder="Detailed steps to reproduce, expected vs actual results"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs text-gray-500 font-semibold mb-1 block">MODULE *</label>
+                                                <select
+                                                    value={formData.module}
+                                                    onChange={(e) => setFormData({...formData, module: e.target.value})}
+                                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                                    required
+                                                >
+                                                    <option value="">Select module</option>
+                                                    {modules.map(mod => (
+                                                        <option key={mod.id} value={mod.id}>{mod.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs text-gray-500 font-semibold mb-1 block">PRIORITY</label>
+                                                <select
+                                                    value={formData.priority}
+                                                    onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                                >
+                                                    <option value="P1">P1 - Critical</option>
+                                                    <option value="P2">P2 - High</option>
+                                                    <option value="P3">P3 - Medium</option>
+                                                    <option value="P4">P4 - Low</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-semibold mb-1 block">SCREENSHOT</label>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleFileChange}
+                                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                            />
+                                            {formData.screenshot && (
+                                                <div className="mt-2 text-sm text-gray-600">
+                                                    Selected: {formData.screenshot.name}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            className="w-full vulcan-button px-6 py-3 rounded-lg font-semibold"
+                                            disabled={submitting}
+                                        >
+                                            {submitting ? (
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    <span>Creating Defect...</span>
+                                                </div>
+                                            ) : (
+                                                'Create Jira Defect'
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        {/* Recent Defects */}
+                        <div>
+                            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                                <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4">
+                                    <h2 className="text-xl font-bold">Recent Defects</h2>
+                                </div>
+                                <div className="p-6">
+                                    {defects.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-500">
+                                            <div className="text-5xl mb-4">⚠</div>
+                                            <p>No defects logged yet</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {defects.map(defect => (
+                                                <div key={defect.id} className="border border-gray-200 rounded-lg p-4">
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-semibold text-gray-800 mb-1">
+                                                                {defect.summary}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mb-2">
+                                                                {defect.jiraId} • {defect.module} • {defect.priority}
+                                                            </div>
+                                                            <div className="text-xs text-gray-600">
+                                                                {defect.createdAt.toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                        <span className="status-badge status-passed">{defect.status.toUpperCase()}</span>
+                                                    </div>
+                                                    <div className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                                        {defect.description}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ EXECUTION PANEL COMPONENT ============
+        function ExecutionPanel({ executionId, onClose, fullScreen }) {
+            const [logs, setLogs] = useState([]);
+            const [status, setStatus] = useState('running');
+            const logsEndRef = useRef(null);
+
+            useEffect(() => {
+                // Connect to SSE stream
+                const eventSource = new EventSource(`${API_BASE}/tests/execution/${executionId}/stream`);
+
+                eventSource.addEventListener('message', (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'complete') {
+                        setStatus(data.status);
+                        eventSource.close();
+                    } else if (data.type !== 'connected') {
+                        setLogs(prev => [...prev, data]);
+                    }
+                });
+
+                eventSource.onerror = () => {
+                    console.error('SSE connection error');
+                    eventSource.close();
+                };
+
+                return () => eventSource.close();
+            }, [executionId]);
+
+            useEffect(() => {
+                logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [logs]);
+
+            const stopExecution = async () => {
+                await fetch(`${API_BASE}/tests/execution/${executionId}/stop`, { method: 'POST' });
+                setStatus('stopped');
+            };
+
+            if (fullScreen) {
+                // Full screen mode for Execution tab
+                return (
+                    <div className="h-full flex flex-col bg-white">
+                        {/* Header */}
+                        <div className="vulcan-gradient text-white p-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold">Test Execution</h2>
+                                    <p className="text-gray-300 mt-1">Execution ID: {executionId}</p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
+                                        status === 'running' ? 'bg-yellow-500/20 border-yellow-500' :
+                                        status === 'passed' ? 'bg-green-500/20 border-green-500' :
+                                        'bg-red-500/20 border-red-500'
+                                    }`}>
+                                        {status === 'running' && <div className="w-2 h-2 bg-yellow-400 rounded-full pulse-dot"></div>}
+                                        <span className="font-semibold capitalize text-white">{status}</span>
+                                    </div>
+                                    {status === 'running' && (
+                                        <button onClick={stopExecution} 
+                                                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold transition-colors">
+                                            STOP
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Logs */}
+                        <div className="flex-1 bg-gray-900 p-6 overflow-y-auto">
+                            <div className="space-y-1">
+                                {logs.map((log, idx) => (
+                                    <div key={idx} className={`log-line ${
+                                        log.type === 'stderr' ? 'text-red-400' : 'text-green-400'
+                                    }`}>
+                                        {log.message}
+                                    </div>
+                                ))}
+                                <div ref={logsEndRef} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Modal mode for inline execution
+            return (
+                <div className="fixed inset-0 bg-black/50 modal-backdrop flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+                        {/* Header */}
+                        <div className="vulcan-gradient text-white p-6">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold">Test Execution</h2>
+                                    <p className="text-gray-300 mt-1">Execution ID: {executionId}</p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
+                                        status === 'running' ? 'bg-yellow-500/20 border-yellow-500' :
+                                        status === 'passed' ? 'bg-green-500/20 border-green-500' :
+                                        'bg-red-500/20 border-red-500'
+                                    }`}>
+                                        {status === 'running' && <div className="w-2 h-2 bg-yellow-400 rounded-full pulse-dot"></div>}
+                                        <span className="font-semibold capitalize text-white">{status}</span>
+                                    </div>
+                                    {status === 'running' && (
+                                        <button onClick={stopExecution} 
+                                                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold transition-colors">
+                                            STOP
+                                        </button>
+                                    )}
+                                    {onClose && (
+                                        <button onClick={onClose} 
+                                                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
+                                            <span className="text-2xl">×</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Logs */}
+                        <div className="bg-gray-900 p-6 overflow-y-auto" style={{maxHeight: '70vh'}}>
+                            <div className="space-y-1">
+                                {logs.map((log, idx) => (
+                                    <div key={idx} className={`log-line ${
+                                        log.type === 'stderr' ? 'text-red-400' : 'text-green-400'
+                                    }`}>
+                                        {log.message}
+                                    </div>
+                                ))}
+                                <div ref={logsEndRef} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ MAIN APP COMPONENT ============
+        function App() {
+            const [activeTab, setActiveTab] = useState('modules');
+            const [modules, setModules] = useState([]);
+            const [stats, setStats] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [selectedModule, setSelectedModule] = useState(null);
+            const [executionId, setExecutionId] = useState(null);
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            useEffect(() => {
+                if (activeTab === 'modules' && modules.length === 0) {
+                    loadData();
+                }
+            }, [activeTab]);
+
+            const loadData = async () => {
+                try {
+                    const [modulesRes, statsRes] = await Promise.all([
+                        fetch(`${API_BASE}/modules`),
+                        fetch(`${API_BASE}/modules/stats`)
+                    ]);
+
+                    const modulesData = await modulesRes.json();
+                    const statsData = await statsRes.json();
+
+                    setModules(modulesData.modules);
+                    setStats(statsData);
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleRunTests = async (module) => {
+                try {
+                    const response = await fetch(`${API_BASE}/tests/run`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            modules: [module.id],
+                            headless: true
+                        })
+                    });
+
+                    const data = await response.json();
+                    setExecutionId(data.executionId);
+                    setActiveTab('execution');
+                } catch (error) {
+                    console.error('Error starting tests:', error);
+                    alert('Failed to start test execution');
+                }
+            };
+
+            const handleRunSelected = async (moduleId, scenarios) => {
+                try {
+                    const response = await fetch(`${API_BASE}/tests/run`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            modules: [moduleId],
+                            headless: true,
+                            selectedScenarios: { [moduleId]: scenarios }
+                        })
+                    });
+
+                    const data = await response.json();
+                    setExecutionId(data.executionId);
+                    setActiveTab('execution');
+                } catch (error) {
+                    console.error('Error starting tests:', error);
+                    alert('Failed to start test execution');
+                }
+            };
+
+            return (
+                <div className="flex h-screen bg-gray-50">
+                    {/* Sidebar */}
+                    <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+                    {/* Main Content */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <Header />
+
+                        {/* Content Area */}
+                        <main className="flex-1 overflow-y-auto">
+                            {activeTab === 'modules' && (
+                                <ModulesTab 
+                                    modules={modules}
+                                    stats={stats}
+                                    loading={loading}
+                                    onRunTests={handleRunTests}
+                                    onViewScenarios={setSelectedModule}
+                                />
+                            )}
+
+                            {activeTab === 'execution' && (
+                                <ExecutionTab executionId={executionId} />
+                            )}
+
+                            {activeTab === 'analytics' && (
+                                <AnalyticsTab />
+                            )}
+
+                            {activeTab === 'report' && (
+                                <ExecutiveReportTab />
+                            )}
+
+                            {activeTab === 'ai' && (
+                                <AICommanderTab />
+                            )}
+
+                            {activeTab === 'defects' && (
+                                <DefectLoggerTab />
+                            )}
+                        </main>
+                    </div>
+
+                    {/* Modals */}
+                    {selectedModule && (
+                        <ScenarioModal 
+                            module={selectedModule}
+                            onClose={() => setSelectedModule(null)}
+                            onRun={handleRunSelected}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        // Render App
+        ReactDOM.render(<App />, document.getElementById('app'));
+    </script>
+</body>
+</html>

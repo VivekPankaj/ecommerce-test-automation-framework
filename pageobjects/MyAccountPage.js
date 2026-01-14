@@ -338,37 +338,59 @@ class MyAccountPage {
 
     async getFirstOrderType() {
         try {
-            // Look for Pickup or Delivery label on the first order card
-            // Based on screenshots: "Pickup" appears with truck icon at top-right of order card
-            const firstOrderCard = this.page.locator('text=/Order #\\d+/').first();
+            console.log('Detecting order type from Purchase History or Order Details page...');
             
-            // Check if Pickup label is visible near the first order
+            // Wait for page to load
+            await this.page.waitForLoadState('networkidle');
+            
+            // Strategy 1: Check if we're on Order Details page (after clicking View Details)
+            const onOrderDetailsPage = await this.page.locator('text=/ORDER #\\d+/i').isVisible({ timeout: 2000 }).catch(() => false);
+            
+            if (onOrderDetailsPage) {
+                console.log('On Order Details page - checking for Delivery/Pickup ADDRESS section...');
+                
+                // Check for "DELIVERY ADDRESS" heading
+                const hasDeliveryAddress = await this.page.locator('text=/DELIVERY ADDRESS/i').isVisible({ timeout: 3000 }).catch(() => false);
+                if (hasDeliveryAddress) {
+                    console.log('✓ Found DELIVERY ADDRESS section - Order type: DELIVERY');
+                    return 'delivery';
+                }
+                
+                // Check for "PICKUP ADDRESS" heading
+                const hasPickupAddress = await this.page.locator('text=/PICKUP ADDRESS/i').isVisible({ timeout: 3000 }).catch(() => false);
+                if (hasPickupAddress) {
+                    console.log('✓ Found PICKUP ADDRESS section - Order type: PICKUP');
+                    return 'pickup';
+                }
+                
+                // Check for "Delivery Charges" in Order Summary (indicates delivery)
+                const hasDeliveryCharges = await this.page.locator('text=/Delivery Charges/i').isVisible({ timeout: 2000 }).catch(() => false);
+                if (hasDeliveryCharges) {
+                    console.log('✓ Found Delivery Charges - Order type: DELIVERY');
+                    return 'delivery';
+                }
+            }
+            
+            // Strategy 2: Check Purchase History page for order type badge/label
             const pickupLabel = this.page.locator('text=/Pickup/i').first();
             const deliveryLabel = this.page.locator('text=/Delivery/i').first();
             
             const isPickup = await pickupLabel.isVisible({ timeout: 2000 }).catch(() => false);
             const isDelivery = await deliveryLabel.isVisible({ timeout: 2000 }).catch(() => false);
             
-            if (isPickup) {
-                console.log("First order type detected: PICKUP");
-                return 'pickup';
-            } else if (isDelivery) {
-                console.log("First order type detected: DELIVERY");
+            if (isDelivery && !isPickup) {
+                console.log('✓ Order type detected from label: DELIVERY');
                 return 'delivery';
-            }
-            
-            // Fallback: try to find by class or specific attributes
-            const pickupByClass = await this.page.locator('[class*="pickup" i], [data-type="pickup"]').first().isVisible({ timeout: 1000 }).catch(() => false);
-            if (pickupByClass) {
-                console.log("First order type detected via class: PICKUP");
+            } else if (isPickup && !isDelivery) {
+                console.log('✓ Order type detected from label: PICKUP');
                 return 'pickup';
             }
             
-            console.log("Could not determine order type, defaulting to PICKUP");
-            return 'pickup';
+            console.log('⚠️ Could not determine order type, defaulting to DELIVERY');
+            return 'delivery'; // Changed default to delivery (more common)
         } catch (error) {
             console.log(`Error detecting order type: ${error.message}`);
-            return 'pickup'; // Default fallback
+            return 'delivery'; // Default fallback changed to delivery
         }
     }
 

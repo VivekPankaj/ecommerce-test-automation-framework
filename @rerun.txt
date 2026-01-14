@@ -1,10 +1,1 @@
-Ecomm/features/add-to-cart.feature:39:55:73:89:108:122:135:151:164:180:193:206:220:237:256:276:295:312:333:356:379:400:423:448:469:482:495:512:524
-Ecomm/features/checkout.feature:44:58:76:94:105:117:133:146:159:173:184:193:202:215:226:238:254:265:275:286:302:312:325:339:354:363:377:392:406:415:429:445:453:464:471:479:487:500:509:517:529:540
-Ecomm/features/login-page-vaidation.feature:38:49:61:73:85
-Ecomm/features/login.feature:45:56:68:80:92
-Ecomm/features/my-account.feature:35:48:62:76:87:99:112:126:137:154:167:179
-Ecomm/features/my-profile-page.feature:12
-Ecomm/features/product-display-page-validation.feature:11:26:35:45:59:65:71:80:88:95
-Ecomm/features/product-listing-page-validation.feature:11:25:35:46:51:57:66:77:92:104
-Ecomm/features/quarry-selector-page-validation.feature:8:23:37
-Ecomm/features/search.feature:27:28:29:32:50:51:52:55:62:70:75:88:89:90:94:102:109:116
+Ecomm/features/search.feature:109

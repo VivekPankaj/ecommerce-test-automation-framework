@@ -1,0 +1,437 @@
+/**
+ * Vulcan E-Commerce Test Dashboard - Backend Server
+ * Express.js server with Jira integration and real-time test execution
+ */
+
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
+const JiraIntegration = require('../utils/jiraIntegration');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Jira Integration
+const jira = new JiraIntegration();
+
+// Active test executions
+const activeExecutions = new Map();
+
+// SSE clients for real-time updates
+const sseClients = new Map();
+
+/**
+ * Module Discovery - Auto-discover test modules from feature files
+ */
+function discoverModules() {
+    const featuresDir = path.join(__dirname, '../Ecomm/features');
+    const featureFiles = fs.readdirSync(featuresDir).filter(f => f.endsWith('.feature'));
+    
+    const modules = [];
+    
+    featureFiles.forEach(file => {
+        const filePath = path.join(featuresDir, file);
+        const content = fs.readFileSync(filePath, 'utf8');
+        
+        // Extract module info
+        const featureLine = content.match(/Feature:\s*(.+)/);
+        const tagLine = content.match(/@(\w+)/g);
+        
+        if (featureLine) {
+            const moduleName = featureLine[1].trim();
+            const moduleTag = tagLine?.[0]?.substring(1) || 'Unknown';
+            
+            // Count scenarios by priority
+            const scenarios = extractScenarios(content);
+            const priorityCounts = {
+                p1: scenarios.filter(s => s.priority === 'P1').length,
+                p2: scenarios.filter(s => s.priority === 'P2').length,
+                p3: scenarios.filter(s => s.priority === 'P3').length
+            };
+            
+            modules.push({
+                id: moduleTag.toLowerCase(),
+                name: moduleName,
+                description: `${moduleName} test scenarios`,
+                status: 'ready',
+                scenarioCount: scenarios.length,
+                jiraStoryCount: 0, // Will be fetched from Jira
+                priorityCounts,
+                tags: tagLine || [],
+                featureFile: file,
+                scenarios
+            });
+        }
+    });
+    
+    return modules;
+}
+
+/**
+ * Extract scenarios from feature file content
+ */
+function extractScenarios(content) {
+    const scenarios = [];
+    const scenarioBlocks = content.split(/(?=Scenario:|Scenario Outline:)/g);
+    
+    scenarioBlocks.forEach(block => {
+        const scenarioMatch = block.match(/(?:Scenario|Scenario Outline):\s*(.+)/);
+        if (scenarioMatch) {
+            const name = scenarioMatch[1].trim();
+            const tags = block.match(/@\w+/g) || [];
+            
+            // Determine priority
+            let priority = 'P3'; // Default
+            if (tags.some(t => t.includes('@P1') || t.includes('@Sanity'))) priority = 'P1';
+            else if (tags.some(t => t.includes('@P2'))) priority = 'P2';
+            
+            // Extract description from first Given/When/Then
+            const descLine = block.match(/(?:Given|When|Then)\s+(.+)/);
+            const description = descLine ? descLine[1].trim() : '';
+            
+            scenarios.push({
+                name,
+                priority,
+                tags,
+                description
+            });
+        }
+    });
+    
+    return scenarios;
+}
+
+/**
+ * Fetch Jira story counts for modules
+ */
+async function enrichModulesWithJiraData(modules) {
+    try {
+        // Get all issues from filter
+        const issues = await jira.getIssuesFromFilter();
+        
+        modules.forEach(module => {
+            // Count issues matching module keywords
+            const keywords = [
+                module.name.toLowerCase(),
+                module.id.toLowerCase()
+            ];
+            
+            const matchingIssues = issues.filter(issue => {
+                const summary = issue.fields.summary.toLowerCase();
+                const description = issue.fields.description?.toLowerCase() || '';
+                return keywords.some(kw => summary.includes(kw) || description.includes(kw));
+            });
+            
+            module.jiraStoryCount = matchingIssues.length;
+        });
+        
+        return modules;
+    } catch (error) {
+        console.error('Error fetching Jira data:', error.message);
+        return modules;
+    }
+}
+
+/**
+ * API: Get all modules
+ */
+app.get('/api/modules', async (req, res) => {
+    try {
+        let modules = discoverModules();
+        modules = await enrichModulesWithJiraData(modules);
+        
+        res.json({ modules });
+    } catch (error) {
+        console.error('Error getting modules:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * API: Get scenarios for a specific module
+ */
+app.get('/api/modules/:moduleId/scenarios', (req, res) => {
+    try {
+        const modules = discoverModules();
+        const module = modules.find(m => m.id === req.params.moduleId);
+        
+        if (!module) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+        
+        res.json({ scenarios: module.scenarios });
+    } catch (error) {
+        console.error('Error getting scenarios:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * API: Run tests
+ */
+app.post('/api/tests/run', (req, res) => {
+    const { modules, headless = true, selectedScenarios = {} } = req.body;
+    
+    if (!modules || modules.length === 0) {
+        return res.status(400).json({ error: 'No modules specified' });
+    }
+    
+    // Generate execution ID
+    const executionId = `exec_${Date.now()}`;
+    
+    // Build tag expression
+    const tags = modules.map(m => `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
+    
+    // Start test execution
+    const cucumberArgs = [
+        'cucumber-js',
+        '--tags', tags,
+        '--format', 'json:test_results.json',
+        '--format', 'progress'
+    ];
+    
+    const testProcess = spawn('npx', cucumberArgs, {
+        cwd: path.join(__dirname, '..'),
+        env: { ...process.env, HEADLESS: headless ? 'true' : 'false' }
+    });
+    
+    // Store execution info
+    activeExecutions.set(executionId, {
+        process: testProcess,
+        startTime: new Date(),
+        modules,
+        selectedScenarios,
+        logs: [],
+        status: 'running'
+    });
+    
+    // Capture output
+    testProcess.stdout.on('data', (data) => {
+        const log = data.toString();
+        const execution = activeExecutions.get(executionId);
+        execution.logs.push({ type: 'stdout', message: log, timestamp: new Date() });
+        
+        // Broadcast to SSE clients
+        broadcastLog(executionId, { type: 'stdout', message: log });
+    });
+    
+    testProcess.stderr.on('data', (data) => {
+        const log = data.toString();
+        const execution = activeExecutions.get(executionId);
+        execution.logs.push({ type: 'stderr', message: log, timestamp: new Date() });
+        
+        // Broadcast to SSE clients
+        broadcastLog(executionId, { type: 'stderr', message: log });
+    });
+    
+    testProcess.on('close', (code) => {
+        const execution = activeExecutions.get(executionId);
+        execution.status = code === 0 ? 'passed' : 'failed';
+        execution.endTime = new Date();
+        execution.exitCode = code;
+        
+        // Sync results to Jira
+        syncResultsToJira();
+        
+        // Broadcast completion
+        broadcastLog(executionId, { 
+            type: 'complete', 
+            status: execution.status,
+            exitCode: code 
+        });
+    });
+    
+    res.json({ 
+        executionId,
+        status: 'started',
+        message: `Test execution started for modules: ${modules.join(', ')}`
+    });
+});
+
+/**
+ * API: SSE Stream for test execution logs
+ */
+app.get('/api/tests/execution/:executionId/stream', (req, res) => {
+    const { executionId } = req.params;
+    
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ type: 'connected', executionId })}\n\n`);
+    
+    // Store client
+    if (!sseClients.has(executionId)) {
+        sseClients.set(executionId, []);
+    }
+    sseClients.get(executionId).push(res);
+    
+    // Send existing logs
+    const execution = activeExecutions.get(executionId);
+    if (execution) {
+        execution.logs.forEach(log => {
+            res.write(`data: ${JSON.stringify(log)}\n\n`);
+        });
+    }
+    
+    // Handle client disconnect
+    req.on('close', () => {
+        const clients = sseClients.get(executionId);
+        if (clients) {
+            const index = clients.indexOf(res);
+            if (index > -1) clients.splice(index, 1);
+        }
+    });
+});
+
+/**
+ * Broadcast log to all SSE clients for execution
+ */
+function broadcastLog(executionId, logData) {
+    const clients = sseClients.get(executionId);
+    if (clients) {
+        clients.forEach(client => {
+            try {
+                client.write(`data: ${JSON.stringify(logData)}\n\n`);
+            } catch (error) {
+                console.error('Error broadcasting to client:', error);
+            }
+        });
+    }
+}
+
+/**
+ * API: Get execution status
+ */
+app.get('/api/tests/execution/:executionId', (req, res) => {
+    const { executionId } = req.params;
+    const execution = activeExecutions.get(executionId);
+    
+    if (!execution) {
+        return res.status(404).json({ error: 'Execution not found' });
+    }
+    
+    res.json({
+        executionId,
+        status: execution.status,
+        startTime: execution.startTime,
+        endTime: execution.endTime,
+        modules: execution.modules,
+        logsCount: execution.logs.length
+    });
+});
+
+/**
+ * API: Stop execution
+ */
+app.post('/api/tests/execution/:executionId/stop', (req, res) => {
+    const { executionId } = req.params;
+    const execution = activeExecutions.get(executionId);
+    
+    if (!execution) {
+        return res.status(404).json({ error: 'Execution not found' });
+    }
+    
+    if (execution.status === 'running') {
+        execution.process.kill('SIGTERM');
+        execution.status = 'stopped';
+        execution.endTime = new Date();
+        
+        res.json({ message: 'Execution stopped successfully' });
+    } else {
+        res.json({ message: 'Execution already completed' });
+    }
+});
+
+/**
+ * API: Get dashboard statistics
+ */
+app.get('/api/modules/stats', async (req, res) => {
+    try {
+        let modules = discoverModules();
+        modules = await enrichModulesWithJiraData(modules);
+        
+        const stats = {
+            totalModules: modules.length,
+            readyModules: modules.filter(m => m.status === 'ready').length,
+            totalScenarios: modules.reduce((sum, m) => sum + m.scenarioCount, 0),
+            totalJiraStories: modules.reduce((sum, m) => sum + m.jiraStoryCount, 0),
+            priorityBreakdown: {
+                p1: modules.reduce((sum, m) => sum + m.priorityCounts.p1, 0),
+                p2: modules.reduce((sum, m) => sum + m.priorityCounts.p2, 0),
+                p3: modules.reduce((sum, m) => sum + m.priorityCounts.p3, 0)
+            }
+        };
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Error getting stats:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * API: Get execution history
+ */
+app.get('/api/tests/history', (req, res) => {
+    const history = Array.from(activeExecutions.entries()).map(([id, exec]) => ({
+        executionId: id,
+        status: exec.status,
+        startTime: exec.startTime,
+        endTime: exec.endTime,
+        modules: exec.modules,
+        exitCode: exec.exitCode
+    }));
+    
+    res.json({ executions: history });
+});
+
+/**
+ * Sync test results to Jira
+ */
+async function syncResultsToJira() {
+    try {
+        const resultsPath = path.join(__dirname, '../test_results.json');
+        if (fs.existsSync(resultsPath)) {
+            await jira.syncTestResults(resultsPath);
+            console.log('✓ Results synced to Jira');
+        }
+    } catch (error) {
+        console.error('Error syncing to Jira:', error.message);
+    }
+}
+
+/**
+ * Serve React frontend
+ */
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`
+╔═══════════════════════════════════════════════════════╗
+║   🚀 Vulcan Test Dashboard Server                    ║
+║                                                       ║
+║   Server running on: http://localhost:${PORT}        ║
+║   API Docs: http://localhost:${PORT}/api/modules     ║
+║                                                       ║
+║   Jira Integration: ✓ Enabled                        ║
+║   Real-time Logs: ✓ SSE Stream                       ║
+║   Module Discovery: ✓ Auto-scan                      ║
+╚═══════════════════════════════════════════════════════╝
+    `);
+});
+
+module.exports = app;

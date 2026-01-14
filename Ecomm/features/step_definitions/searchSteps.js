@@ -187,12 +187,17 @@ When("I click on the first search result", async function () {
 });
 
 Then("I should be redirected to the product detail page", async function () {
-    await this.page.waitForLoadState('networkidle');
-    const url = this.page.url();
-    if (!url.includes('/product')) {
-        throw new Error(`Not redirected to PDP. URL: ${url}`);
+    // Wait for URL to contain /product/ (navigation completed)
+    try {
+        await this.page.waitForURL('**/product/**', { timeout: 10000 });
+        const url = this.page.url();
+        console.log(`✓ Redirected to PDP: ${url}`);
+    } catch (error) {
+        const url = this.page.url();
+        const screenshot = await this.page.screenshot();
+        this.attach(screenshot, 'image/png');
+        throw new Error(`Not redirected to PDP. Current URL: ${url}`);
     }
-    console.log(`Redirected to PDP: ${url}`);
 });
 
 // Note: "I am on the Product Listing Page" step is defined in productListingSteps.js

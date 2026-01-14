@@ -496,9 +496,82 @@ class SearchPage {
     async clickFirstSearchResult() {
         try {
             await this.closeBlockingModals();
-            const firstProduct = this.page.locator('[class*="product-tile"] a, [class*="ProductTile"] a').first();
-            await firstProduct.click();
-            await this.page.waitForLoadState('networkidle');
+            
+            console.log('Looking for first search result product to click...');
+            
+            // Wait a bit for results to fully render
+            await this.page.waitForTimeout(1000);
+            
+            // Multiple strategies to find the first product link
+            const productSelectors = [
+                // Most generic - any link containing /product/
+                'a[href*="/product/"]',
+                // Search result specific selectors
+                '[data-testid="search-result"] a',
+                '[class*="search-result"] a',
+                '[class*="search"] a[href*="/product/"]',
+                // General product tile selectors
+                '[class*="product-tile"] a',
+                '[class*="ProductTile"] a',
+                '[class*="product-card"] a',
+                '[class*="ProductCard"] a',
+                // Product image/title links
+                'img[alt*="product" i] ~ a, a > img',
+                'h2 a, h3 a, h4 a',
+                // MUI or styled components
+                '[class*="MuiCard"] a',
+                '[class*="card"] a[href*="/category/"], [class*="card"] a[href*="/product/"]'
+            ];
+            
+            let clicked = false;
+            for (const selector of productSelectors) {
+                try {
+                    const productLinks = this.page.locator(selector);
+                    const count = await productLinks.count();
+                    
+                    if (count > 0) {
+                        console.log(`Found ${count} elements with selector: ${selector}`);
+                        const firstLink = productLinks.first();
+                        
+                        if (await firstLink.isVisible({ timeout: 2000 })) {
+                            const href = await firstLink.getAttribute('href').catch(() => 'unknown');
+                            console.log(`✓ Found clickable link: ${href}`);
+                            
+                            // Only click if it's a product link
+                            if (href && (href.includes('/product/') || href.includes('/category/'))) {
+                                await firstLink.click();
+                                console.log('✓ Clicked on first search result');
+                                
+                                // Wait for navigation
+                                try {
+                                    await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 });
+                                    console.log('✓ Page loaded after click');
+                                } catch (e) {
+                                    console.log('⚠️ Page load timeout, continuing...');
+                                }
+                                
+                                clicked = true;
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log(`Selector ${selector}: ${e.message}`);
+                }
+            }
+            
+            if (!clicked) {
+                // Debug: log what's on the page
+                const allLinks = await this.page.locator('a').count();
+                console.log(`Total links on page: ${allLinks}`);
+                const productLinksDebug = await this.page.locator('a[href*="/"]').evaluateAll(links => 
+                    links.slice(0, 10).map(l => ({ href: l.href, text: l.textContent.trim().substring(0, 50) }))
+                );
+                console.log('Sample links:', JSON.stringify(productLinksDebug, null, 2));
+                
+                throw new Error('Could not find any clickable product in search results');
+            }
+            
         } catch (error) {
             throw new Error(`Failed to click first search result: ${error.message}`);
         }

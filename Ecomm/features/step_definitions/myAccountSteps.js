@@ -588,7 +588,15 @@ Then("I should see the Modify link for Pickup or Delivery Details", async functi
 
 Then("I should see the correct Address section based on order type", async function () {
     myAccountPage = myAccountPage || new MyAccountPage(this.page);
-    const orderType = this.orderType || 'pickup';
+    
+    // If orderType is not set, try to detect it now
+    if (!this.orderType) {
+        console.log('⚠️ Order type was not set earlier, detecting now...');
+        this.orderType = await myAccountPage.getFirstOrderType();
+    }
+    
+    const orderType = this.orderType;
+    console.log(`Validating Address section for order type: ${orderType.toUpperCase()}`);
     
     let hasAddressSection = false;
     if (orderType === 'pickup') {
@@ -612,7 +620,15 @@ Then("I should see the correct Address section based on order type", async funct
 
 Then("I should see the correct Details section with Modify link based on order type", async function () {
     myAccountPage = myAccountPage || new MyAccountPage(this.page);
-    const orderType = this.orderType || 'pickup';
+    
+    // If orderType is not set, try to detect it now
+    if (!this.orderType) {
+        console.log('⚠️ Order type was not set earlier, detecting now...');
+        this.orderType = await myAccountPage.getFirstOrderType();
+    }
+    
+    const orderType = this.orderType;
+    console.log(`Validating Details section for order type: ${orderType.toUpperCase()}`);
     
     let hasDetailsSection = false;
     if (orderType === 'pickup') {

@@ -6,3 +6,21 @@ allure-report/
 allure-results/
 
 .vscode/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Test execution results
+test_results.json
+results.json
+cucumber-report.html
+
+# Screenshots
+screenshot*.png
+*.png
+
+# Temporary files
+test_output*.txt
+state.json
