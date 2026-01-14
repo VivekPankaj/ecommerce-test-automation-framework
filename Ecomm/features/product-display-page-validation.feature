@@ -1,3 +1,4 @@
+@Regression @PDP
 Feature: Product Display Page (PDP) Validation
   As a customer
   I want to view product information on the PDP
@@ -21,7 +22,7 @@ Feature: Product Display Page (PDP) Validation
       | enter custom quantity field |
       | Product overview            |
 
-  @Locked @Sanity @PDP @P1 @product-tile-price-validation
+  @Locked @Regression @PDP @P1 @product-tile-price-validation
   Scenario: Verify price attributes on product tile with valid quantity
     When I click on a first product
     When I set valid quantity on PDP
@@ -40,7 +41,7 @@ Feature: Product Display Page (PDP) Validation
     And i see the calulated material needed in tons
     And calculated value matches with calculated material needed in yards
 
-  @Locked @Sanity @PDP @P2 @quantityCalculatorValidation1
+  @Locked @Regression @PDP @P2 @quantityCalculatorValidation1
   Scenario: Verify quantity calculator functionality with dimensions set 2 in feet
     When I click on a first product
     And I click on Estimate quantity link
@@ -54,19 +55,19 @@ Feature: Product Display Page (PDP) Validation
     Then custom quantity field should be updated with apply estimate tons value
     Then total material price should be unit price times custom quantity field value
 
-  @Locked @Sanity @PDP @P2 @QuantitySelector
+  @Locked @Regression @PDP @P2 @QuantitySelector
   Scenario: Verify max quantity validation message
     When I click on a first product
     When I set max exceeded quantity on PDP
     Then I should see quantity range validation message
 
-  @Locked @Sanity @PDP @P2 @QuantitySelector
+  @Locked @Regression @PDP @P2 @QuantitySelector
   Scenario: Verify invalid text quantity validation message
     When I click on a first product
     When I set invalid text quantity on PDP
     Then I should see invalid number validation message
 
-  @Locked @Sanity @PDP @P2 @DeliveryInfoTooltip
+  @Locked @Regression @PDP @P2 @DeliveryInfoTooltip
   Scenario: Verify delivery charges tooltip message
     When I click on a first product
     When i click on delivery charges Info
@@ -83,14 +84,14 @@ Feature: Product Display Page (PDP) Validation
     Then I should not see delivery charges section on PDP
     And the price should show only material cost without delivery
 
-  @Locked @Sanity @PDP @P2 @Pickup
+  @Locked @Regression @PDP @P2 @Pickup
   Scenario: Verify PDP shows Pickup location in header
     Given I am on the Product Listing Page for Pickup
     When I switch to Pickup mode
     And I click on a first product
     Then the header should display Pickup with facility address
 
-  @Locked @Sanity @PDP @P2 @Pickup
+  @Locked @Regression @PDP @P2 @Pickup
   Scenario: Verify quantity changes in Pickup mode calculate correctly
     Given I am on the Product Listing Page for Pickup
     When I switch to Pickup mode

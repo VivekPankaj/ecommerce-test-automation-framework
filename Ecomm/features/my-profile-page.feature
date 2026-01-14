@@ -1,4 +1,4 @@
-@Sanity @MyProfile
+@Regression @Sanity @MyProfile
 Feature: Update My Profile Information
   As a logged-in Vulcan Shop user
   I want to update my personal profile details

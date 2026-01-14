@@ -1,3 +1,4 @@
+@Regression @PLP
 Feature: Product Listing Page (PLP) Validation
   As a customer
   I want to view product information on the PLP
@@ -41,18 +42,18 @@ Feature: Product Listing Page (PLP) Validation
       | Unit Price  | Unit Price                |
       | Total Price | Qty selected * Unit Price |
 
-  @Locked @Sanity @PLP @P2 @Navigation
+  @Locked @Regression @PLP @P2 @Navigation
   Scenario: Verify product tile navigation and placeholder handling
     When I click on a first product
     Then I should be redirected to the corresponding Product Detail Page
 
-  @Locked @Sanity @PLP @P2 @NavigationBar
+  @Locked @Regression @PLP @P2 @NavigationBar
   Scenario: Verify navigation bar categories display
     When I view the navigation bar
     Then all the categories should be displayed
     And I should see the default category selection
 
-  @Locked @Sanity @PLP @P2 @CategorySelection
+  @Locked @Regression @PLP @P2 @CategorySelection
   Scenario: Verify category selection and product display
     When I click a category in the navigation bar
     Then the clicked category should be highlighted
@@ -72,7 +73,7 @@ Feature: Product Listing Page (PLP) Validation
     And I should see a list of nearby facilities sorted by distance
     And each facility should show the distance in miles
 
-  @Locked @Sanity @PLP @P2 @Pickup @DistanceFilter
+  @Locked @Regression @PLP @P2 @Pickup @DistanceFilter
   Scenario: Verify distance filter changes facility count
     Given I am on the Product Listing Page for Pickup
     When I click on Pickup Instead button
@@ -99,7 +100,7 @@ Feature: Product Listing Page (PLP) Validation
     Then the header should show "Pickup at" with the selected facility name
     And I should NOT see the "Delivery Instead?" button replaced with "Pickup Instead?"
 
-  @Locked @Sanity @PLP @P1 @Pickup @NoDeliveryCharges
+  @Locked @Regression @PLP @P1 @Pickup @NoDeliveryCharges
   Scenario: Verify no delivery charges displayed on PLP for Pickup orders
     Given I am on the Product Listing Page for Pickup
     When I click on Pickup Instead button

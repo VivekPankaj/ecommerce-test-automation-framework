@@ -40,7 +40,7 @@ Feature: Checkout Flow
   # PART A: CHECKOUT PAGE NAVIGATION & VALIDATION
   # ============================================================================
 
-  @Sanity @P1 @CheckoutNavigation @Guest
+  @Regression @P1 @CheckoutNavigation @Guest
   Scenario: Guest user navigates to checkout page from cart
     Given I am on the Product Listing Page as a Guest user
     And I set delivery address using primary zipcode
@@ -169,7 +169,7 @@ Feature: Checkout Flow
   # PART D: SCHEDULE SELECTION - DELIVERY TIME SLOTS
   # ============================================================================
 
-  @Sanity @P1 @Schedule @Delivery @TimeSlot
+  @Regression @P1 @Schedule @Delivery @TimeSlot
   Scenario: User selects delivery date and time slot
     Given I am on the checkout page with Delivery mode
     When I navigate to the Schedule section
@@ -211,7 +211,7 @@ Feature: Checkout Flow
   # PART E: SCHEDULE SELECTION - PICKUP TIME SLOTS
   # ============================================================================
 
-  @Sanity @P1 @Schedule @Pickup @TimeSlot
+  @Regression @P1 @Schedule @Pickup @TimeSlot
   Scenario: User selects pickup date and time slot
     Given I am on the checkout page with Pickup mode
     When I navigate to the Schedule section
@@ -321,7 +321,7 @@ Feature: Checkout Flow
   # PART H: ORDER SUMMARY VALIDATION
   # ============================================================================
 
-  @Sanity @P1 @OrderSummary @Delivery
+  @Regression @P1 @OrderSummary @Delivery
   Scenario: Validate Order Summary for Delivery order
     Given I am on the checkout page with Delivery mode
     And I have a product in cart

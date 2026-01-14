@@ -69,7 +69,7 @@ Feature: Add to Cart Functionality
   # PART B: PLP VIA SHOP BY CATEGORIES
   # ============================================================================
 
-  @Sanity @P1 @Guest @Delivery @PLP @ShopByCategories
+  @Regression @P1 @Guest @Delivery @PLP @ShopByCategories
   Scenario: Guest adds product from PLP via Shop By Categories - Delivery mode
     Given I am on the home page as a Guest user
     When I hover on "Shop By Categories" menu
@@ -104,7 +104,7 @@ Feature: Add to Cart Functionality
   # PART C: PDP SCENARIOS
   # ============================================================================
 
-  @Sanity @P1 @Guest @Delivery @PDP
+  @Regression @P1 @Guest @Delivery @PDP
   Scenario: Guest adds product from PDP with default quantity - Delivery mode
     Given I am on the Product Listing Page as a Guest user
     And I set delivery address using primary zipcode
@@ -147,7 +147,7 @@ Feature: Add to Cart Functionality
   # PART D: SEARCH RESULTS SCENARIOS
   # ============================================================================
 
-  @Sanity @P1 @Guest @Delivery @Search
+  @Regression @P1 @Guest @Delivery @Search
   Scenario: Guest adds product from Search results - Delivery mode
     Given I am on the home page as a Guest user
     When I search for "BASE"
@@ -176,7 +176,7 @@ Feature: Add to Cart Functionality
   # PART E: REGISTERED USER SCENARIOS
   # ============================================================================
 
-  @Sanity @P1 @Registered @Delivery @PLP
+  @Regression @P1 @Registered @Delivery @PLP
   Scenario: Registered user adds product from PLP - Delivery mode (with cart cleanup)
     Given I am logged in as a registered user
     And I clear all items from the cart
@@ -233,7 +233,7 @@ Feature: Add to Cart Functionality
   # PART F: MULTIPLE PRODUCTS & QUANTITY BEHAVIOR
   # ============================================================================
 
-  @Sanity @P1 @CartBehavior @SameProduct
+  @Regression @P1 @CartBehavior @SameProduct
   Scenario: Adding same product multiple times increases quantity, not cart count
     Given I am logged in as a registered user
     And I clear all items from the cart
@@ -252,7 +252,7 @@ Feature: Add to Cart Functionality
     When I click the close button on the slider
     Then the cart icon in header should show count 1
 
-  @Sanity @P1 @CartBehavior @DifferentProducts
+  @Regression @P1 @CartBehavior @DifferentProducts
   Scenario: Adding different products increases cart count
     Given I am logged in as a registered user
     And I clear all items from the cart
@@ -396,7 +396,7 @@ Feature: Add to Cart Functionality
   # PART I: CART PAGE VALIDATIONS
   # ============================================================================
 
-  @Sanity @P1 @CartValidation @Delivery
+  @Regression @P1 @CartValidation @Delivery
   Scenario: Validate cart page elements for Delivery mode
     Given I am logged in as a registered user
     And I clear all items from the cart
@@ -419,7 +419,7 @@ Feature: Add to Cart Functionality
     And I should see the Checkout button
     And I should see the "+ Add Items" link
 
-  @Sanity @P1 @CartValidation @Pickup
+  @Regression @P1 @CartValidation @Pickup
   Scenario: Validate cart page elements for Pickup mode
     Given I am logged in as a registered user
     And I clear all items from the cart

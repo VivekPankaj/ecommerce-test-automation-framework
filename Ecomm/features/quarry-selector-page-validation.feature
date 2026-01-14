@@ -1,3 +1,4 @@
+@Regression @QuarrySelector
 Feature: Quarry Address Selector Modal Validation
   As a user
   I want to select or change my address

@@ -25,7 +25,7 @@
 # ⚠️  Any modifications require re-running all @Login tests
 # ============================================================================
 
-@Sanity @Login
+@Regression @Sanity @Login
 Feature: Login Page Validation
   As a Vulcan Shop user
   I want to validate login and logout flows

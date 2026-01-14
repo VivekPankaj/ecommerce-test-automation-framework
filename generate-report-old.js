@@ -13,51 +13,25 @@ let totalSteps = 0;
 let passedSteps = 0;
 let failedSteps = 0;
 let skippedSteps = 0;
-let totalDuration = 0;
+let totalDuration = 0; // Total execution time in nanoseconds
 
 const failedScenariosList = [];
 const passedScenariosList = [];
 const allScenarios = [];
 const moduleStats = {}; // Track stats by module/feature
 
-// Helper function to extract module name from feature name
-function getModuleName(featureName) {
-    if (!featureName) return 'Unknown Module';
-    
-    // Map feature names to cleaner module names
-    const moduleMap = {
-        'Add to Cart Functionality': 'Add to Cart',
-        'Search Functionality Validation': 'Search',
-        'Product Display Page (PDP) Validation': 'PDP',
-        'Product Listing Page (PLP) Validation': 'PLP',
-        'Quarry Address Selector Modal Validation': 'Quarry Selector',
-        'Login Page Validation': 'Login',
-        'My Account Validation': 'My Account',
-        'Checkout Flow': 'Checkout',
-        'Update My Profile Information': 'My Profile',
-        'Inspect Cart Structure': 'Cart Inspection'
-    };
-    
-    return moduleMap[featureName] || featureName;
-}
-
 // Process each feature
 resultsData.forEach(feature => {
-    const featureName = feature.name || 'Unknown Feature';
-    const moduleName = getModuleName(featureName);
-    
     // Initialize module stats
-    if (!moduleStats[moduleName]) {
-        moduleStats[moduleName] = {
-            fullName: featureName,
+    const featureName = feature.name || 'Unknown Feature';
+    if (!moduleStats[featureName]) {
+        moduleStats[featureName] = {
             total: 0,
             passed: 0,
             failed: 0,
-            scenarios: [],
-            duration: 0
+            scenarios: []
         };
     }
-    
     feature.elements.forEach(scenario => {
         if (scenario.type === 'scenario') {
             totalScenarios++;
@@ -67,7 +41,6 @@ resultsData.forEach(feature => {
             const failedStepsInScenario = [];
             const allStepsInScenario = [];
             let screenshotPath = null;
-            let scenarioDuration = 0;
             
             scenario.steps.forEach(step => {
                 // Skip hidden steps (hooks)
@@ -90,7 +63,6 @@ resultsData.forEach(feature => {
                 // Add step duration to total
                 if (step.result.duration) {
                     totalDuration += step.result.duration;
-                    scenarioDuration += step.result.duration;
                 }
                 
                 if (step.result.status === 'passed') {
@@ -118,32 +90,29 @@ resultsData.forEach(feature => {
             });
             
             const scenarioData = {
-                feature: featureName,
-                module: moduleName,
+                feature: feature.name,
                 scenario: scenario.name,
                 line: scenario.line,
                 status: scenarioFailed ? 'failed' : (scenarioPassed ? 'passed' : 'skipped'),
                 steps: allStepsInScenario,
                 failedSteps: failedStepsInScenario,
-                screenshot: screenshotPath,
-                duration: scenarioDuration
+                screenshot: screenshotPath
             };
             
             allScenarios.push(scenarioData);
             
             // Add to module stats
-            moduleStats[moduleName].total++;
-            moduleStats[moduleName].scenarios.push(scenarioData);
-            moduleStats[moduleName].duration += scenarioDuration;
+            moduleStats[featureName].total++;
+            moduleStats[featureName].scenarios.push(scenarioData);
             
             if (scenarioFailed) {
                 failedScenarios++;
                 failedScenariosList.push(scenarioData);
-                moduleStats[moduleName].failed++;
+                moduleStats[featureName].failed++;
             } else if (scenarioPassed) {
                 passedScenarios++;
                 passedScenariosList.push(scenarioData);
-                moduleStats[moduleName].passed++;
+                moduleStats[featureName].passed++;
             }
         }
     });
@@ -169,117 +138,6 @@ function formatDuration(nanoseconds) {
 const executionTime = formatDuration(totalDuration);
 const executionTimeSeconds = (totalDuration / 1000000000).toFixed(2);
 
-// Generate module summary HTML
-function generateModuleSummary() {
-    const modules = Object.keys(moduleStats).sort();
-    
-    return modules.map(moduleName => {
-        const stats = moduleStats[moduleName];
-        const passPercent = ((stats.passed / stats.total) * 100).toFixed(1);
-        const failPercent = ((stats.failed / stats.total) * 100).toFixed(1);
-        const statusClass = stats.failed > 0 ? 'module-failed' : 'module-passed';
-        
-        const moduleTime = formatDuration(stats.duration);
-        
-        return `
-        <div class="module-card ${statusClass}" onclick="scrollToModule('${moduleName}')">
-            <div class="module-header">
-                <h3 class="module-name">📦 ${moduleName}</h3>
-                <span class="module-status ${stats.failed > 0 ? 'failed' : 'passed'}">
-                    ${stats.failed > 0 ? '❌' : '✅'}
-                </span>
-            </div>
-            <div class="module-stats">
-                <div class="module-stat">
-                    <span class="stat-label">Total:</span>
-                    <span class="stat-value">${stats.total}</span>
-                </div>
-                <div class="module-stat passed">
-                    <span class="stat-label">Passed:</span>
-                    <span class="stat-value">${stats.passed} (${passPercent}%)</span>
-                </div>
-                ${stats.failed > 0 ? `
-                <div class="module-stat failed">
-                    <span class="stat-label">Failed:</span>
-                    <span class="stat-value">${stats.failed} (${failPercent}%)</span>
-                </div>
-                ` : ''}
-                <div class="module-stat">
-                    <span class="stat-label">⏱️ Time:</span>
-                    <span class="stat-value">${moduleTime}</span>
-                </div>
-            </div>
-            <div class="module-progress">
-                <div class="progress-bar-mini">
-                    <div class="progress-fill passed" style="width: ${passPercent}%"></div>
-                    <div class="progress-fill failed" style="width: ${failPercent}%"></div>
-                </div>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-
-// Generate module details HTML
-function generateModuleDetails() {
-    const modules = Object.keys(moduleStats).sort();
-    
-    return modules.map(moduleName => {
-        const stats = moduleStats[moduleName];
-        
-        const scenariosHTML = stats.scenarios.map((scenario, index) => {
-            const scenarioId = `${moduleName.replace(/\s+/g, '-')}-${index}`;
-            const statusClass = scenario.status === 'failed' ? 'failed' : 'passed';
-            
-            return `
-            <li class="scenario-item ${statusClass}" onclick="toggleSteps('${scenarioId}')">
-                <div class="scenario-header">
-                    <div class="scenario-name">
-                        <span class="expand-icon">▶</span>
-                        ${scenario.scenario}
-                        <span class="badge ${statusClass}">${scenario.status.toUpperCase()}</span>
-                    </div>
-                    ${scenario.screenshot ? `<a href="#" class="screenshot-link" onclick="event.stopPropagation(); openScreenshot('${scenarioId}'); return false;">📸 Screenshot</a>` : ''}
-                </div>
-                <div class="scenario-meta">Line: ${scenario.line} | Steps: ${scenario.steps.length}</div>
-                <div id="${scenarioId}" class="steps-container">
-                    <strong>Test Steps:</strong>
-                    ${scenario.steps.map(step => {
-                        let statusIcon = step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '⊘';
-                        let statusText = step.status === 'passed' ? 'PASSED' : step.status === 'failed' ? 'FAILED' : 'SKIPPED';
-                        return `
-                        <div class="step-item ${step.status}">
-                            <span class="step-status ${step.status}">${statusIcon} ${statusText}</span>
-                            <span class="step-keyword">${step.keyword}</span>${step.name}
-                            ${step.status === 'failed' && step.error ? `
-                                <div class="error-message">${step.error.substring(0, 300)}${step.error.length > 300 ? '...' : ''}</div>
-                            ` : ''}
-                        </div>
-                    `}).join('')}
-                </div>
-                ${scenario.screenshot ? `
-                    <div id="screenshot-${scenarioId}" class="screenshot-container">
-                        <img src="${scenario.screenshot}" alt="Failed step screenshot"/>
-                    </div>
-                ` : ''}
-            </li>
-            `;
-        }).join('');
-        
-        return `
-        <div class="module-section" id="module-${moduleName.replace(/\s+/g, '-')}">
-            <h2 class="module-section-title">
-                ${stats.failed > 0 ? '❌' : '✅'} ${moduleName}
-                <span class="module-summary">(${stats.passed}/${stats.total} passed • ⏱️ ${formatDuration(stats.duration)})</span>
-            </h2>
-            <ul class="scenario-list">
-                ${scenariosHTML}
-            </ul>
-        </div>
-        `;
-    }).join('');
-}
-
 // Generate HTML Report
 const htmlReport = `
 <!DOCTYPE html>
@@ -291,7 +149,7 @@ const htmlReport = `
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #003087;
+            background: #003087; /* Vulcan Blue */
             padding: 20px;
             color: #333;
         }
@@ -304,50 +162,38 @@ const htmlReport = `
             overflow: hidden;
         }
         .header {
-            background: #003087;
+            background: #003087; /* Vulcan Blue */
             color: white;
             padding: 40px 30px;
             text-align: center;
             border-bottom: 4px solid #0066CC;
         }
+        .header .logo-container {
+            margin-bottom: 20px;
+        }
         .header .logo {
             max-width: 250px;
             height: auto;
-            filter: brightness(0) invert(1);
-            margin-bottom: 20px;
+            filter: brightness(0) invert(1); /* Make logo white */
         }
-        .header h1 { font-size: 2.2em; margin-bottom: 10px; font-weight: 600; }
-        .header h2 { font-size: 1.5em; margin-bottom: 15px; font-weight: 400; color: #E0E0E0; }
-        .timestamp { color: #999; font-size: 0.9em; margin-top: 5px; }
-        
-        .export-buttons {
-            padding: 20px 30px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            text-align: right;
-        }
-        .export-btn {
-            background: #003087;
-            color: white;
-            padding: 10px 25px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1em;
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
             font-weight: 600;
-            margin-left: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,48,135,0.2);
         }
-        .export-btn:hover {
-            background: #0066CC;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,48,135,0.3);
+        .header h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            font-weight: 400;
+            color: #E0E0E0;
         }
-        
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
         .summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             padding: 30px;
             background: #f8f9fa;
@@ -357,7 +203,7 @@ const htmlReport = `
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #003087;
+            border-left: 4px solid #003087; /* Vulcan Blue */
             transition: transform 0.2s ease;
         }
         .stat-card:hover {
@@ -380,101 +226,52 @@ const htmlReport = `
         .stat-card.passed .number { color: #28a745; }
         .stat-card.failed { border-left-color: #dc3545; }
         .stat-card.failed .number { color: #dc3545; }
-        .stat-card.total { border-left-color: #003087; }
+        .stat-card.total { border-left-color: #003087; } /* Vulcan Blue */
         .stat-card.total .number { color: #003087; }
-        
-        .executive-summary {
-            padding: 30px;
-            background: white;
+        .progress-bar {
+            margin: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #E0E0E0;
         }
-        .executive-summary h2 {
-            color: #003087;
+        .progress-bar h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .progress-container {
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+        }
+        .progress-passed {
+            background: linear-gradient(90deg, #28a745, #20c997);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .progress-failed {
+            background: linear-gradient(90deg, #dc3545, #c82333);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .section {
+            padding: 30px;
+        }
+        .section h2 {
+            color: #003087; /* Vulcan Blue */
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 3px solid #003087;
             font-weight: 600;
         }
-        .modules-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .module-card {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .module-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        }
-        .module-card.module-passed {
-            border-left: 5px solid #28a745;
-        }
-        .module-card.module-failed {
-            border-left: 5px solid #dc3545;
-        }
-        .module-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .module-name {
-            color: #003087;
-            font-size: 1.1em;
-            font-weight: 600;
-        }
-        .module-status {
-            font-size: 1.5em;
-        }
-        .module-stats {
-            margin: 15px 0;
-        }
-        .module-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 0.9em;
-        }
-        .module-stat.passed { color: #28a745; }
-        .module-stat.failed { color: #dc3545; }
-        .stat-label { font-weight: 600; }
-        .progress-bar-mini {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            display: flex;
-            margin-top: 10px;
-        }
-        .progress-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-        .progress-fill.passed { background: #28a745; }
-        .progress-fill.failed { background: #dc3545; }
-        
-        .module-section {
-            padding: 30px;
-            border-top: 2px solid #e0e0e0;
-        }
-        .module-section-title {
-            color: #003087;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-            font-weight: 600;
-        }
-        .module-summary {
-            font-size: 0.7em;
-            color: #666;
-            font-weight: 400;
-        }
-        
         .scenario-list {
             list-style: none;
         }
@@ -503,26 +300,11 @@ const htmlReport = `
         .scenario-name {
             font-weight: bold;
             color: #333;
+            margin-bottom: 5px;
             flex: 1;
         }
-        .scenario-meta {
-            color: #666;
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        .badge.passed { background: #d4edda; color: #155724; }
-        .badge.failed { background: #f8d7da; color: #721c24; }
-        
         .screenshot-link {
-            background: #003087;
+            background: #003087; /* Vulcan Blue */
             color: white;
             padding: 6px 15px;
             border-radius: 4px;
@@ -533,10 +315,15 @@ const htmlReport = `
             font-weight: 600;
         }
         .screenshot-link:hover {
-            background: #0066CC;
+            background: #0066CC; /* Lighter Vulcan Blue */
             transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,48,135,0.3);
         }
-        
+        .feature-name {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
         .steps-container {
             display: none;
             margin-top: 15px;
@@ -572,7 +359,7 @@ const htmlReport = `
         }
         .step-keyword {
             font-weight: bold;
-            color: #003087;
+            color: #003087; /* Vulcan Blue */
             margin-right: 5px;
         }
         .step-status {
@@ -593,29 +380,26 @@ const htmlReport = `
             background: #ffc107;
             color: #333;
         }
-        .error-message {
+        .error-details {
             background: #fff;
-            padding: 10px;
+            padding: 15px;
             margin-top: 10px;
             border-radius: 4px;
             border: 1px solid #ffcdd2;
+        }
+        .error-step {
             color: #d32f2f;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .error-message {
+            color: #666;
             font-family: 'Courier New', monospace;
             font-size: 0.85em;
             white-space: pre-wrap;
-        }
-        .screenshot-container {
-            display: none;
-            margin-top: 15px;
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .screenshot-container img {
-            max-width: 100%;
-            border: 2px solid #dc3545;
-            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
         }
         .expand-icon {
             margin-right: 10px;
@@ -624,7 +408,6 @@ const htmlReport = `
         .scenario-item.expanded .expand-icon {
             transform: rotate(90deg);
         }
-        
         .footer {
             background: #f8f9fa;
             padding: 20px;
@@ -632,23 +415,66 @@ const htmlReport = `
             color: #666;
             border-top: 1px solid #dee2e6;
         }
-        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge.passed { background: #d4edda; color: #155724; }
+        .badge.failed { background: #f8d7da; color: #721c24; }
+        .timestamp {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .export-buttons {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            text-align: right;
+        }
+        .export-btn {
+            background: #003087; /* Vulcan Blue */
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,48,135,0.2);
+        }
+        .export-btn:hover {
+            background: #0066CC; /* Lighter Vulcan Blue */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,48,135,0.3);
+        }
+        .export-btn:active {
+            transform: translateY(0px);
+        }
+        .export-btn i {
+            margin-right: 8px;
+        }
         @media print {
             .export-buttons { display: none; }
             .screenshot-link { display: none; }
-            .steps-container { display: none !important; }
-            .screenshot-container { display: none !important; }
-            .scenario-item { cursor: default; page-break-inside: avoid; }
-            .module-section { page-break-before: always; }
+            .scenario-item { cursor: default; }
+            .steps-container { display: block !important; }
             body { background: white; padding: 0; }
-            .expand-icon { display: none; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://www.vulcanmaterials.com/images/default-source/logos/vulcan-materials-company-logo.png" alt="Vulcan Materials Company" class="logo">
+            <div class="logo-container">
+                <img src="https://www.vulcanmaterials.com/images/default-source/logos/vulcan-materials-company-logo.png" alt="Vulcan Materials Company" class="logo">
+            </div>
             <h1>E-Commerce Storefront</h1>
             <h2>Test Execution Report</h2>
             <p class="timestamp">Generated: ${new Date().toLocaleString()}</p>
@@ -692,14 +518,80 @@ const htmlReport = `
             </div>
         </div>
 
-        <div class="executive-summary">
-            <h2>📊 Executive Summary - Module Status</h2>
-            <div class="modules-grid">
-                ${generateModuleSummary()}
+        <div class="progress-bar">
+            <h3>Test Coverage Overview</h3>
+            <div class="progress-container">
+                <div class="progress-passed" style="width: ${passRate}%">${passRate}% Passed</div>
+                <div class="progress-failed" style="width: ${failRate}%">${failRate}% Failed</div>
             </div>
         </div>
 
-        ${generateModuleDetails()}
+        <div class="section">
+            <h2>✅ Passed Scenarios (${passedScenarios})</h2>
+            <ul class="scenario-list">
+                ${passedScenariosList.map((item, index) => `
+                    <li class="scenario-item" onclick="toggleSteps('passed-${index}')">
+                        <div class="scenario-header">
+                            <div class="scenario-name">
+                                <span class="expand-icon">▶</span>
+                                ${item.scenario}
+                                <span class="badge passed">PASSED</span>
+                            </div>
+                        </div>
+                        <div class="feature-name">📁 ${item.feature} (Line: ${item.line})</div>
+                        <div id="passed-${index}" class="steps-container">
+                            <strong>Test Steps (${item.steps.length}):</strong>
+                            ${item.steps.map(step => `
+                                <div class="step-item passed">
+                                    <span class="step-status passed">✓ PASSED</span>
+                                    <span class="step-keyword">${step.keyword}</span>${step.name}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>❌ Failed Scenarios (${failedScenarios})</h2>
+            <ul class="scenario-list">
+                ${failedScenariosList.map((item, index) => `
+                    <li class="scenario-item failed" onclick="toggleSteps('failed-${index}')">
+                        <div class="scenario-header">
+                            <div class="scenario-name">
+                                <span class="expand-icon">▶</span>
+                                ${item.scenario}
+                                <span class="badge failed">FAILED</span>
+                            </div>
+                            ${item.screenshot ? `<a href="#" class="screenshot-link" onclick="event.stopPropagation(); openScreenshot('failed-${index}'); return false;">📸 View Screenshot</a>` : ''}
+                        </div>
+                        <div class="feature-name">📁 ${item.feature} (Line: ${item.line})</div>
+                        <div id="failed-${index}" class="steps-container">
+                            <strong>Test Steps (${item.steps.length}):</strong>
+                            ${item.steps.map(step => {
+                                let statusClass = step.status;
+                                let statusIcon = step.status === 'passed' ? '✓' : step.status === 'failed' ? '✗' : '⊘';
+                                let statusText = step.status === 'passed' ? 'PASSED' : step.status === 'failed' ? 'FAILED' : 'SKIPPED';
+                                return `
+                                <div class="step-item ${statusClass}">
+                                    <span class="step-status ${statusClass}">${statusIcon} ${statusText}</span>
+                                    <span class="step-keyword">${step.keyword}</span>${step.name}
+                                    ${step.status === 'failed' && step.error ? `
+                                        <div class="error-message" style="margin-top: 10px;">${step.error.substring(0, 300)}${step.error.length > 300 ? '...' : ''}</div>
+                                    ` : ''}
+                                </div>
+                            `}).join('')}
+                        </div>
+                        ${item.screenshot ? `
+                            <div id="screenshot-failed-${index}" style="display: none; margin-top: 15px; text-align: center;">
+                                <img src="${item.screenshot}" style="max-width: 100%; border: 2px solid #dc3545; border-radius: 8px;" alt="Failed step screenshot"/>
+                            </div>
+                        ` : ''}
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
 
         <div class="footer">
             <p><strong>Vulcan Materials Company</strong> - E-Commerce Storefront Automation</p>
@@ -724,7 +616,7 @@ const htmlReport = `
         function openScreenshot(id) {
             const screenshotDiv = document.getElementById('screenshot-' + id);
             if (screenshotDiv) {
-                if (screenshotDiv.style.display === 'none' || screenshotDiv.style.display === '') {
+                if (screenshotDiv.style.display === 'none') {
                     screenshotDiv.style.display = 'block';
                 } else {
                     screenshotDiv.style.display = 'none';
@@ -732,23 +624,27 @@ const htmlReport = `
             }
         }
         
-        function scrollToModule(moduleName) {
-            const moduleId = 'module-' + moduleName.replace(/\s+/g, '-');
-            const moduleElement = document.getElementById(moduleId);
-            if (moduleElement) {
-                moduleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                // Highlight the module briefly
-                moduleElement.style.backgroundColor = '#fff9e6';
-                setTimeout(() => {
-                    moduleElement.style.backgroundColor = '';
-                }, 2000);
-            }
-        }
-        
         function exportToPDF() {
-            // Do NOT expand scenarios for PDF - keep them collapsed
-            // This keeps the PDF concise with just summary information
-            window.print();
+            // Expand all scenarios for PDF
+            const allStepsContainers = document.querySelectorAll('.steps-container');
+            allStepsContainers.forEach(container => {
+                container.classList.add('expanded');
+                const scenarioItem = container.closest('.scenario-item');
+                if (scenarioItem) {
+                    scenarioItem.classList.add('expanded');
+                }
+            });
+            
+            // Show all screenshots for PDF
+            const allScreenshots = document.querySelectorAll('[id^="screenshot-"]');
+            allScreenshots.forEach(screenshot => {
+                screenshot.style.display = 'block';
+            });
+            
+            // Wait a moment for rendering, then print
+            setTimeout(() => {
+                window.print();
+            }, 500);
         }
     </script>
 </body>
@@ -768,16 +664,6 @@ console.log(`\n📊 SCENARIO STATISTICS:`);
 console.log(`   Total Scenarios:  ${totalScenarios}`);
 console.log(`   ✅ Passed:        ${passedScenarios} (${passRate}%)`);
 console.log(`   ❌ Failed:        ${failedScenarios} (${failRate}%)`);
-console.log(`\n📊 MODULE STATISTICS:`);
-
-Object.keys(moduleStats).sort().forEach(moduleName => {
-    const stats = moduleStats[moduleName];
-    const modulePassRate = ((stats.passed / stats.total) * 100).toFixed(1);
-    const statusIcon = stats.failed > 0 ? '❌' : '✅';
-    const moduleTime = formatDuration(stats.duration);
-    console.log(`   ${statusIcon} ${moduleName.padEnd(20)} ${stats.passed}/${stats.total} (${modulePassRate}%) ⏱️ ${moduleTime}`);
-});
-
 console.log(`\n📊 STEP STATISTICS:`);
 console.log(`   Total Steps:      ${totalSteps}`);
 console.log(`   ✅ Passed:        ${passedSteps}`);
@@ -786,5 +672,4 @@ console.log(`   ⏭️  Skipped:       ${skippedSteps}`);
 console.log('\n' + '='.repeat(80));
 console.log(`\n📄 HTML Report generated: ${reportPath}`);
 console.log(`\n💡 Open the report with: open test-report.html`);
-console.log(`📄 Export to PDF: Click the "Export to PDF" button in the report`);
-console.log(`📊 Module Navigation: Click any module card to jump to detailed scenarios\n`);
+console.log(`📄 Export to PDF: Click the "Export to PDF" button in the report\n`);
