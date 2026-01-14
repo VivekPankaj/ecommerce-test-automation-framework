@@ -336,8 +336,15 @@ app.post('/api/tests/run', (req, res) => {
     if (customTags) {
         // Check if customTags contains priority tags (@P1, @P2, @P3)
         const hasPriorityTags = /@P[1-3]/i.test(customTags);
+        // Check if customTags contains suite tags (@Sanity, @Regression, @Smoke)
+        const hasSuiteTags = /@(Sanity|Regression|Smoke)/i.test(customTags);
         
-        if (hasPriorityTags && modules.length === 1) {
+        if (hasSuiteTags && !hasPriorityTags) {
+            // Running a test suite (Sanity, Regression) - just use the suite tag directly
+            // No need to combine with module tags
+            tags = customTags;
+            console.log(`Running test suite: ${tags}`);
+        } else if (hasPriorityTags && modules.length === 1) {
             // Single module with priority selection - use module tag AND priority
             const moduleTag = moduleTagsMap[modules[0]] || `@${modules[0].charAt(0).toUpperCase() + modules[0].slice(1)}`;
             tags = `(${moduleTag}) and (${customTags})`;
@@ -347,7 +354,7 @@ app.post('/api/tests/run', (req, res) => {
             tags = customTags;
             console.log(`Running priority tests across modules: ${tags}`);
         } else {
-            // Other custom tags (Sanity, Regression) - combine with module tags
+            // Other custom tags - combine with module tags
             const moduleTags = modules.map(m => moduleTagsMap[m] || `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
             tags = `(${moduleTags}) and (${customTags})`;
             console.log(`Running with custom tags: ${tags}`);
@@ -367,7 +374,9 @@ app.post('/api/tests/run', (req, res) => {
     // Start test execution
     const cucumberArgs = [
         'cucumber-js',
-        '--config', '.cucumber.json',
+        'Ecomm/features/*.feature',  // Explicit feature path for proper file discovery
+        '--require', 'Ecomm/features/step_definitions/**/*.js',
+        '--require', 'Ecomm/features/support/**/*.js',
         '--tags', tags,
         '--format', 'json:test_results.json',
         '--format', 'progress'
@@ -375,26 +384,53 @@ app.post('/api/tests/run', (req, res) => {
     
     const testProcess = spawn('npx', cucumberArgs, {
         cwd: path.join(__dirname, '..'),
-        env: { ...process.env, HEADLESS: headless ? 'true' : 'false' }
+        env: { ...process.env, HEADLESS: headless ? 'true' : 'false' },
+        detached: true  // Create process group for proper cleanup
     });
     
     // Store execution info with scenario names for display
     const selectedModuleData = discoveredModules.filter(m => modules.includes(m.id));
     const scenarioNames = [];
     selectedModuleData.forEach(m => {
-        if (customTags && /@P[1-3]/i.test(customTags)) {
-            // Filter scenarios by priority
-            const priorities = customTags.match(/@P[1-3]/gi) || [];
-            m.scenarios.forEach(s => {
-                if (priorities.some(p => s.priority.toUpperCase() === p.replace('@', '').toUpperCase())) {
-                    scenarioNames.push({ module: m.name, name: s.name, priority: s.priority });
+        m.scenarios.forEach(s => {
+            let shouldInclude = true;
+            
+            if (customTags) {
+                // Check for suite tags (Sanity, Regression)
+                const hasSanityTag = /@sanity/i.test(customTags);
+                const hasRegressionTag = /@regression/i.test(customTags);
+                
+                // Check for priority tags
+                const priorityMatches = customTags.match(/@P[1-3]/gi) || [];
+                const hasPriorityTags = priorityMatches.length > 0;
+                
+                // Apply filters
+                if (hasSanityTag && !hasRegressionTag) {
+                    // Only include Sanity scenarios
+                    shouldInclude = s.isSanity === true;
+                } else if (hasRegressionTag && !hasSanityTag) {
+                    // Only include Regression scenarios
+                    shouldInclude = s.isRegression === true;
                 }
-            });
-        } else {
-            m.scenarios.forEach(s => {
-                scenarioNames.push({ module: m.name, name: s.name, priority: s.priority });
-            });
-        }
+                
+                // Additionally filter by priority if specified
+                if (shouldInclude && hasPriorityTags) {
+                    shouldInclude = priorityMatches.some(p => 
+                        s.priority.toUpperCase() === p.replace('@', '').toUpperCase()
+                    );
+                }
+            }
+            
+            if (shouldInclude) {
+                scenarioNames.push({ 
+                    module: m.name, 
+                    name: s.name, 
+                    priority: s.priority,
+                    isSanity: s.isSanity,
+                    isRegression: s.isRegression
+                });
+            }
+        });
     });
     
     activeExecutions.set(executionId, {
@@ -541,9 +577,43 @@ app.post('/api/tests/execution/:executionId/stop', (req, res) => {
     }
     
     if (execution.status === 'running') {
-        execution.process.kill('SIGTERM');
+        const pid = execution.process.pid;
+        
+        // Kill the entire process tree on macOS/Linux
+        try {
+            // First try SIGTERM
+            process.kill(-pid, 'SIGTERM');
+        } catch (e) {
+            // If process group kill fails, try killing the process directly
+            try {
+                execution.process.kill('SIGTERM');
+            } catch (e2) {
+                console.log('Process already terminated');
+            }
+        }
+        
+        // Force kill after 2 seconds if still running
+        setTimeout(() => {
+            try {
+                process.kill(-pid, 'SIGKILL');
+            } catch (e) {
+                try {
+                    execution.process.kill('SIGKILL');
+                } catch (e2) {
+                    // Process already dead
+                }
+            }
+        }, 2000);
+        
         execution.status = 'stopped';
         execution.endTime = new Date();
+        
+        // Broadcast stop to SSE clients
+        broadcastLog(executionId, { 
+            type: 'system', 
+            message: '⛔ Test execution stopped by user',
+            status: 'stopped'
+        });
         
         res.json({ message: 'Execution stopped successfully' });
     } else {
