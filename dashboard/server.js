@@ -31,6 +31,24 @@ const sseClients = new Map();
 /**
  * Module Discovery - Auto-discover test modules from feature files
  */
+/**
+ * Calculate estimated execution time
+ */
+function calculateEstimatedTime(scenarioCount) {
+    const AVG_SCENARIO_TIME_SECONDS = 45;
+    const totalSeconds = scenarioCount * AVG_SCENARIO_TIME_SECONDS;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m`;
+    } else {
+        return `${totalSeconds}s`;
+    }
+}
+
 function discoverModules() {
     const featuresDir = path.join(__dirname, '../Ecomm/features');
     const featureFiles = fs.readdirSync(featuresDir).filter(f => f.endsWith('.feature'));
@@ -43,11 +61,34 @@ function discoverModules() {
         
         // Extract module info
         const featureLine = content.match(/Feature:\s*(.+)/);
-        const tagLine = content.match(/@(\w+)/g);
+        
+        // Extract feature-level tags (tags that appear before the Feature: line)
+        const lines = content.split('\n');
+        const featureLineIndex = lines.findIndex(line => line.includes('Feature:'));
+        let featureTags = [];
+        
+        // Look backwards from Feature line to find tags
+        if (featureLineIndex > 0) {
+            for (let i = featureLineIndex - 1; i >= 0; i--) {
+                const line = lines[i].trim();
+                if (line.startsWith('@')) {
+                    featureTags = line.match(/@\w+/g) || [];
+                    break;
+                } else if (line && !line.startsWith('#')) {
+                    break; // Stop if we hit non-tag, non-comment content
+                }
+            }
+        }
         
         if (featureLine) {
             const moduleName = featureLine[1].trim();
-            const moduleTag = tagLine?.[0]?.substring(1) || 'Unknown';
+            
+            // Use specific module tag (skip generic @Regression/@Sanity, prefer @Login/@Checkout etc)
+            const genericTags = ['Regression', 'Sanity'];
+            const moduleTag = featureTags
+                .map(t => t.substring(1))
+                .find(t => !genericTags.includes(t)) || 
+                featureTags[0]?.substring(1) || 'Unknown';
             
             // Count scenarios by priority
             const scenarios = extractScenarios(content);
@@ -65,9 +106,10 @@ function discoverModules() {
                 scenarioCount: scenarios.length,
                 jiraStoryCount: 0, // Will be fetched from Jira
                 priorityCounts,
-                tags: tagLine || [],
+                tags: featureTags || [],
                 featureFile: file,
-                scenarios
+                scenarios,
+                estimatedTime: calculateEstimatedTime(scenarios.length)
             });
         }
     });
@@ -80,31 +122,70 @@ function discoverModules() {
  */
 function extractScenarios(content) {
     const scenarios = [];
-    const scenarioBlocks = content.split(/(?=Scenario:|Scenario Outline:)/g);
+    const lines = content.split('\n');
     
-    scenarioBlocks.forEach(block => {
-        const scenarioMatch = block.match(/(?:Scenario|Scenario Outline):\s*(.+)/);
-        if (scenarioMatch) {
-            const name = scenarioMatch[1].trim();
-            const tags = block.match(/@\w+/g) || [];
-            
-            // Determine priority
-            let priority = 'P3'; // Default
-            if (tags.some(t => t.includes('@P1') || t.includes('@Sanity'))) priority = 'P1';
-            else if (tags.some(t => t.includes('@P2'))) priority = 'P2';
-            
-            // Extract description from first Given/When/Then
-            const descLine = block.match(/(?:Given|When|Then)\s+(.+)/);
-            const description = descLine ? descLine[1].trim() : '';
-            
-            scenarios.push({
-                name,
-                priority,
-                tags,
-                description
-            });
+    let currentTags = [];
+    let inScenario = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Collect tags
+        if (line.startsWith('@')) {
+            // Skip feature-level tags (tags before Feature:)
+            const nextNonEmptyLine = lines.slice(i + 1).find(l => l.trim());
+            if (!nextNonEmptyLine || !nextNonEmptyLine.includes('Feature:')) {
+                currentTags = line.match(/@\w+/g) || [];
+            }
+        } 
+        // Found a scenario
+        else if (line.match(/^(Scenario|Scenario Outline):/)) {
+            const scenarioMatch = line.match(/(?:Scenario|Scenario Outline):\s*(.+)/);
+            if (scenarioMatch) {
+                const name = scenarioMatch[1].trim();
+                const tags = [...currentTags]; // Copy the tags for this scenario
+                
+                // Determine priority - only assign if explicitly tagged
+                let priority = null;
+                if (tags.some(t => t.includes('@P1') || t.includes('@Sanity'))) {
+                    priority = 'P1';
+                } else if (tags.some(t => t.includes('@P2'))) {
+                    priority = 'P2';
+                } else if (tags.some(t => t.includes('@P3'))) {
+                    priority = 'P3';
+                }
+                
+                // Extract description from first Given/When/Then after this line
+                let description = '';
+                for (let j = i + 1; j < lines.length && j < i + 20; j++) {
+                    const descMatch = lines[j].trim().match(/^(Given|When|Then)\s+(.+)/);
+                    if (descMatch) {
+                        description = descMatch[2].trim();
+                        break;
+                    }
+                }
+                
+                scenarios.push({
+                    name,
+                    priority,
+                    tags,
+                    description,
+                    isRegression: tags.some(t => t.toLowerCase().includes('regression')),
+                    isSanity: tags.some(t => t.toLowerCase().includes('sanity'))
+                });
+                
+                currentTags = []; // Reset tags for next scenario
+            }
+        } 
+        // Also reset tags if we hit a blank line followed by tags (between scenarios)
+        else if (!line && currentTags.length > 0) {
+            // Keep tags if next non-empty line is Scenario
+            const nextLine = lines[i + 1]?.trim();
+            if (nextLine && !nextLine.startsWith('@') && !nextLine.match(/^(Scenario|Scenario Outline):/)) {
+                currentTags = [];
+            }
         }
-    });
+    }
     
     return scenarios;
 }
@@ -178,7 +259,7 @@ app.get('/api/modules/:moduleId/scenarios', (req, res) => {
  * API: Run tests
  */
 app.post('/api/tests/run', (req, res) => {
-    const { modules, headless = true, selectedScenarios = {} } = req.body;
+    const { modules, headless = true, selectedScenarios = {}, tags: customTags } = req.body;
     
     if (!modules || modules.length === 0) {
         return res.status(400).json({ error: 'No modules specified' });
@@ -187,12 +268,29 @@ app.post('/api/tests/run', (req, res) => {
     // Generate execution ID
     const executionId = `exec_${Date.now()}`;
     
+    // Get actual module tags from the discovered modules
+    const discoveredModules = discoverModules();
+    const moduleTagsMap = {};
+    discoveredModules.forEach(m => {
+        moduleTagsMap[m.id] = m.tags && m.tags.length > 0 ? m.tags[0] : `@${m.id.charAt(0).toUpperCase() + m.id.slice(1)}`;
+    });
+    
     // Build tag expression
-    const tags = modules.map(m => `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
+    let tags;
+    if (customTags) {
+        // If custom tags provided (priority/regression/sanity), combine with module tags
+        const moduleTags = modules.map(m => moduleTagsMap[m] || `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
+        // Combine: (module tags) AND (custom tags)
+        tags = `(${moduleTags}) and (${customTags})`;
+    } else {
+        // Default to module-based tags only
+        tags = modules.map(m => moduleTagsMap[m] || `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
+    }
     
     // Start test execution
     const cucumberArgs = [
         'cucumber-js',
+        '--config', '.cucumber.json',
         '--tags', tags,
         '--format', 'json:test_results.json',
         '--format', 'progress'
@@ -209,6 +307,7 @@ app.post('/api/tests/run', (req, res) => {
         startTime: new Date(),
         modules,
         selectedScenarios,
+        tags,
         logs: [],
         status: 'running'
     });
@@ -361,15 +460,89 @@ app.get('/api/modules/stats', async (req, res) => {
         let modules = discoverModules();
         modules = await enrichModulesWithJiraData(modules);
         
+        // Count tag-based scenarios (Regression and Sanity)
+        let regressionCount = 0;
+        let sanityCount = 0;
+        
+        const featuresDir = path.join(__dirname, '../Ecomm/features');
+        
+        modules.forEach(module => {
+            const featurePath = path.join(featuresDir, module.featureFile);
+            if (fs.existsSync(featurePath)) {
+                const content = fs.readFileSync(featurePath, 'utf-8');
+                const lines = content.split('\n');
+                
+                // First, find Feature-level tags
+                let featureTags = '';
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.startsWith('Feature:')) {
+                        // Look back for tags before Feature declaration
+                        for (let j = i - 1; j >= 0; j--) {
+                            const prevLine = lines[j].trim();
+                            if (prevLine.startsWith('@')) {
+                                featureTags = prevLine + ' ' + featureTags;
+                            } else if (prevLine !== '' && !prevLine.startsWith('#')) {
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                
+                // Now count scenarios and apply feature tags to each
+                lines.forEach((line, index) => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('Scenario:') || trimmedLine.startsWith('Scenario Outline:')) {
+                        // Get scenario-level tags
+                        let scenarioTags = '';
+                        for (let i = index - 1; i >= 0; i--) {
+                            const prevLine = lines[i].trim();
+                            if (prevLine.startsWith('@')) {
+                                scenarioTags = prevLine + ' ' + scenarioTags;
+                            } else if (prevLine !== '') {
+                                break;
+                            }
+                        }
+                        
+                        // Combine feature tags and scenario tags
+                        const allTags = (featureTags + ' ' + scenarioTags).toLowerCase();
+                        
+                        if (allTags.includes('@regression')) {
+                            regressionCount++;
+                        }
+                        if (allTags.includes('@sanity')) {
+                            sanityCount++;
+                        }
+                    }
+                });
+            }
+        });
+        
+        const p1Count = modules.reduce((sum, m) => sum + m.priorityCounts.p1, 0);
+        const p2Count = modules.reduce((sum, m) => sum + m.priorityCounts.p2, 0);
+        const p3Count = modules.reduce((sum, m) => sum + m.priorityCounts.p3, 0);
+        
         const stats = {
             totalModules: modules.length,
             readyModules: modules.filter(m => m.status === 'ready').length,
             totalScenarios: modules.reduce((sum, m) => sum + m.scenarioCount, 0),
             totalJiraStories: modules.reduce((sum, m) => sum + m.jiraStoryCount, 0),
             priorityBreakdown: {
-                p1: modules.reduce((sum, m) => sum + m.priorityCounts.p1, 0),
-                p2: modules.reduce((sum, m) => sum + m.priorityCounts.p2, 0),
-                p3: modules.reduce((sum, m) => sum + m.priorityCounts.p3, 0)
+                p1: p1Count,
+                p2: p2Count,
+                p3: p3Count
+            },
+            tagBreakdown: {
+                regression: regressionCount,
+                sanity: sanityCount
+            },
+            estimatedExecutionTime: {
+                regression: calculateEstimatedTime(regressionCount),
+                sanity: calculateEstimatedTime(sanityCount),
+                p1: calculateEstimatedTime(p1Count),
+                p2: calculateEstimatedTime(p2Count),
+                p3: calculateEstimatedTime(p3Count)
             }
         };
         

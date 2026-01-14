@@ -155,6 +155,62 @@
 
         // ============ MODULES TAB COMPONENT ============
         function ModulesTab({ modules, stats, loading, onRunTests, onViewScenarios }) {
+            const [selectedPriorities, setSelectedPriorities] = useState(['All']);
+            const [runningPriorityTests, setRunningPriorityTests] = useState(false);
+
+            const togglePriority = (priority) => {
+                if (priority === 'All') {
+                    setSelectedPriorities(['All']);
+                } else {
+                    let newPriorities = selectedPriorities.filter(p => p !== 'All');
+                    if (newPriorities.includes(priority)) {
+                        newPriorities = newPriorities.filter(p => p !== priority);
+                        if (newPriorities.length === 0) {
+                            newPriorities = ['All'];
+                        }
+                    } else {
+                        newPriorities.push(priority);
+                    }
+                    setSelectedPriorities(newPriorities);
+                }
+            };
+
+            const handleRunPriorityTests = async () => {
+                if (selectedPriorities.includes('All')) {
+                    alert('Please select specific priorities (P1, P2, or P3) to run priority-based tests.');
+                    return;
+                }
+
+                setRunningPriorityTests(true);
+                try {
+                    const tags = selectedPriorities.map(p => `@${p}`).join(' or ');
+                    const response = await fetch(`${API_BASE}/tests/run`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            modules: modules.map(m => m.id),
+                            headless: true,
+                            tags: tags
+                        })
+                    });
+
+                    const data = await response.json();
+                    alert(`Started execution for ${selectedPriorities.join(', ')} tests. Execution ID: ${data.executionId}`);
+                } catch (error) {
+                    console.error('Error starting priority tests:', error);
+                    alert('Failed to start priority-based test execution');
+                } finally {
+                    setRunningPriorityTests(false);
+                }
+            };
+
+            const getPriorityCount = (priority) => {
+                if (priority === 'All') {
+                    return modules.reduce((sum, m) => sum + m.scenarios, 0);
+                }
+                return modules.reduce((sum, m) => sum + (m.priorityBreakdown?.[priority.toLowerCase()] || 0), 0);
+            };
+
             if (loading) {
                 return (
                     <div className="flex items-center justify-center h-full">
@@ -168,6 +224,119 @@
 
             return (
                 <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Quick Priority Selection */}
+                    <div className="bg-white rounded-xl shadow-md p-6 mb-8 border-l-4 border-blue-700">
+                        <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center">
+                                    <span className="text-2xl mr-2">⚡</span>
+                                    Quick Priority Selection
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                    Select one or more priorities to execute scenarios across all modules
+                                </p>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                                {/* All Priority */}
+                                <button
+                                    onClick={() => togglePriority('All')}
+                                    className={`flex flex-col items-center justify-center px-6 py-4 rounded-lg border-2 transition-all ${
+                                        selectedPriorities.includes('All')
+                                            ? 'border-gray-600 bg-gray-50 shadow-md'
+                                            : 'border-gray-300 bg-white hover:border-gray-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-gray-600"></div>
+                                        <span className="font-bold text-gray-800">All</span>
+                                        {selectedPriorities.includes('All') && (
+                                            <span className="text-green-600 text-lg">✓</span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500">{getPriorityCount('All')} scenarios</span>
+                                </button>
+
+                                {/* P1 Priority */}
+                                <button
+                                    onClick={() => togglePriority('P1')}
+                                    className={`flex flex-col items-center justify-center px-6 py-4 rounded-lg border-2 transition-all ${
+                                        selectedPriorities.includes('P1')
+                                            ? 'border-red-600 bg-red-50 shadow-md'
+                                            : 'border-red-300 bg-white hover:border-red-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                                        <span className="font-bold text-red-600">P1</span>
+                                        {selectedPriorities.includes('P1') && (
+                                            <span className="text-green-600 text-lg">✓</span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500">{getPriorityCount('P1')} scenarios</span>
+                                </button>
+
+                                {/* P2 Priority */}
+                                <button
+                                    onClick={() => togglePriority('P2')}
+                                    className={`flex flex-col items-center justify-center px-6 py-4 rounded-lg border-2 transition-all ${
+                                        selectedPriorities.includes('P2')
+                                            ? 'border-orange-600 bg-orange-50 shadow-md'
+                                            : 'border-orange-300 bg-white hover:border-orange-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-orange-600"></div>
+                                        <span className="font-bold text-orange-600">P2</span>
+                                        {selectedPriorities.includes('P2') && (
+                                            <span className="text-green-600 text-lg">✓</span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500">{getPriorityCount('P2')} scenarios</span>
+                                </button>
+
+                                {/* P3 Priority */}
+                                <button
+                                    onClick={() => togglePriority('P3')}
+                                    className={`flex flex-col items-center justify-center px-6 py-4 rounded-lg border-2 transition-all ${
+                                        selectedPriorities.includes('P3')
+                                            ? 'border-blue-600 bg-blue-50 shadow-md'
+                                            : 'border-blue-300 bg-white hover:border-blue-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                                        <span className="font-bold text-blue-600">P3</span>
+                                        {selectedPriorities.includes('P3') && (
+                                            <span className="text-green-600 text-lg">✓</span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500">{getPriorityCount('P3')} scenarios</span>
+                                </button>
+
+                                {/* Run Button */}
+                                {!selectedPriorities.includes('All') && (
+                                    <button
+                                        onClick={handleRunPriorityTests}
+                                        disabled={runningPriorityTests}
+                                        className="vulcan-button px-8 py-4 rounded-lg font-semibold flex items-center space-x-2 ml-4"
+                                    >
+                                        {runningPriorityTests ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Starting...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>▶</span>
+                                                <span>Run Selected</span>
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Stats Section */}
                     {stats && (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -214,6 +383,9 @@
 
         // ============ MODULE CARD COMPONENT ============
         function ModuleCard({ module, onRunTests, onViewScenarios }) {
+            const [showPrioritySelector, setShowPrioritySelector] = useState(false);
+            const [selectedModulePriorities, setSelectedModulePriorities] = useState([]);
+            
             const priorityColors = {
                 p1: { bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-700', dot: 'bg-red-500' },
                 p2: { bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-700', dot: 'bg-orange-500' },
@@ -224,6 +396,43 @@
                 ready: 'status-ready',
                 'in-progress': 'status-running',
                 'not-started': 'bg-gray-100 text-gray-700 border border-gray-300'
+            };
+
+            const toggleModulePriority = (priority) => {
+                if (selectedModulePriorities.includes(priority)) {
+                    setSelectedModulePriorities(selectedModulePriorities.filter(p => p !== priority));
+                } else {
+                    setSelectedModulePriorities([...selectedModulePriorities, priority]);
+                }
+            };
+
+            const handleRunByPriority = async () => {
+                if (selectedModulePriorities.length === 0) {
+                    alert('Please select at least one priority');
+                    return;
+                }
+
+                const tags = selectedModulePriorities.map(p => `@${p.toUpperCase()}`).join(' or ');
+                
+                try {
+                    const response = await fetch(`${API_BASE}/tests/run`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            modules: [module.id],
+                            headless: true,
+                            tags: tags
+                        })
+                    });
+
+                    const data = await response.json();
+                    alert(`Started ${selectedModulePriorities.map(p => p.toUpperCase()).join(', ')} tests for ${module.name}`);
+                    setShowPrioritySelector(false);
+                    setSelectedModulePriorities([]);
+                } catch (error) {
+                    console.error('Error starting tests:', error);
+                    alert('Failed to start test execution');
+                }
             };
 
             return (
@@ -256,27 +465,78 @@
                         </div>
                     </div>
 
+                    {/* Priority Breakdown - Clickable */}
                     <div className="flex flex-wrap gap-2 mb-4">
                         {Object.entries(module.priorityCounts).map(([priority, count]) => {
                             const colors = priorityColors[priority];
+                            const isSelected = selectedModulePriorities.includes(priority);
                             return count > 0 ? (
-                                <div key={priority} 
-                                     className={`flex items-center space-x-2 px-3 py-1 rounded-lg border ${colors.bg} ${colors.border}`}>
+                                <button
+                                    key={priority}
+                                    onClick={() => {
+                                        setShowPrioritySelector(true);
+                                        toggleModulePriority(priority);
+                                    }}
+                                    className={`flex items-center space-x-2 px-3 py-1 rounded-lg border transition-all ${
+                                        isSelected 
+                                            ? `${colors.bg} ${colors.border} ring-2 ring-offset-1 ring-blue-400` 
+                                            : `${colors.bg} ${colors.border} hover:shadow-md`
+                                    }`}>
                                     <div className={`w-2 h-2 rounded-full ${colors.dot}`}></div>
                                     <span className={`text-sm font-semibold ${colors.text}`}>
                                         {priority.toUpperCase()}: {count}
                                     </span>
-                                </div>
+                                    {isSelected && <span className="text-green-600 text-sm">✓</span>}
+                                </button>
                             ) : null;
                         })}
                     </div>
+
+                    {/* Priority Selection Panel */}
+                    {showPrioritySelector && (
+                        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm font-semibold text-gray-700">
+                                    ⚡ Run by Priority: {selectedModulePriorities.map(p => p.toUpperCase()).join(', ') || 'Select priorities above'}
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        setShowPrioritySelector(false);
+                                        setSelectedModulePriorities([]);
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700 text-xl"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={handleRunByPriority}
+                                    disabled={selectedModulePriorities.length === 0}
+                                    className="flex-1 vulcan-button py-2 px-4 rounded-lg font-semibold text-sm flex items-center justify-center space-x-2"
+                                >
+                                    <span>▶</span>
+                                    <span>Run Selected Priorities</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowPrioritySelector(false);
+                                        setSelectedModulePriorities([]);
+                                    }}
+                                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold text-sm"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex space-x-2">
                         <button 
                             onClick={() => onRunTests(module)}
                             className="flex-1 vulcan-blue-bg hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2">
                             <span>▶</span>
-                            <span>RUN TESTS</span>
+                            <span>RUN ALL</span>
                         </button>
                         <button 
                             onClick={() => onViewScenarios(module)}
