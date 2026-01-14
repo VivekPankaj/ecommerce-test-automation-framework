@@ -30,26 +30,22 @@ class JiraIntegration {
      */
     async getIssuesFromFilter() {
         try {
-            // Use API v2 which is more stable
-            const response = await this.jiraClient.get('/rest/api/2/search', {
-                params: {
-                    jql: `filter=${this.jiraFilterId}`,
-                    maxResults: 100,
-                    fields: 'summary,status,priority,assignee,description,epic'
-                }
+            // Use API v3 with POST for JQL search (new Atlassian API)
+            const response = await this.jiraClient.post('/rest/api/3/search/jql', {
+                jql: `filter=${this.jiraFilterId}`,
+                maxResults: 100,
+                fields: ['summary', 'status', 'priority', 'assignee', 'description']
             });
 
             return response.data.issues;
         } catch (error) {
             console.error('Error fetching issues from Jira:', error.message);
-            // Fallback: try direct project query
+            // Fallback: try direct project query with v3 API
             try {
-                const fallbackResponse = await this.jiraClient.get('/rest/api/2/search', {
-                    params: {
-                        jql: `project = ${this.jiraProjectKey} ORDER BY created DESC`,
-                        maxResults: 100,
-                        fields: 'summary,status,priority,description'
-                    }
+                const fallbackResponse = await this.jiraClient.post('/rest/api/3/search/jql', {
+                    jql: `project = ${this.jiraProjectKey} ORDER BY created DESC`,
+                    maxResults: 100,
+                    fields: ['summary', 'status', 'priority', 'description']
                 });
                 return fallbackResponse.data.issues;
             } catch (fallbackError) {
@@ -64,15 +60,13 @@ class JiraIntegration {
      */
     async getTestCases() {
         try {
-            // Use filter-based query instead of direct JQL
+            // Use filter-based query with API v3
             const jql = `project = ${this.jiraProjectKey} ORDER BY created DESC`;
             
-            const response = await this.jiraClient.get('/rest/api/2/search', {
-                params: {
-                    jql: jql,
-                    maxResults: 100,
-                    fields: 'summary,status,priority,labels'
-                }
+            const response = await this.jiraClient.post('/rest/api/3/search/jql', {
+                jql: jql,
+                maxResults: 100,
+                fields: ['summary', 'status', 'priority', 'labels']
             });
 
             return response.data.issues.map(issue => ({

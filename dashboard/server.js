@@ -3,7 +3,7 @@
  * Express.js server with Jira integration and real-time test execution
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -198,20 +198,71 @@ async function enrichModulesWithJiraData(modules) {
         // Get all issues from filter
         const issues = await jira.getIssuesFromFilter();
         
+        // Define keyword mappings for each module type with include/exclude logic
+        const moduleKeywordMap = {
+            'addtocart': {
+                include: ['cart', 'add to cart', 'cart summary', 'cart page', 'cart update'],
+                exclude: ['checkout', 'payment', 'pay by link']
+            },
+            'checkout': {
+                include: ['checkout', 'payment', 'pay by link', 'place order', 'delivery order'],
+                exclude: []
+            },
+            'login': {
+                include: ['login', 'sign in', 'sign out', 'signin', 'logout', 'authentication'],
+                exclude: []
+            },
+            'search': {
+                include: ['search', 'product search'],
+                exclude: ['quarry']
+            },
+            'pdp': {
+                include: ['pdp', 'product display', 'product detail'],
+                exclude: []
+            },
+            'plp': {
+                include: ['plp', 'product listing', 'product list', 'category'],
+                exclude: []
+            },
+            'my-account': {
+                include: ['my account', 'account', 'profile', 'user profile'],
+                exclude: []
+            },
+            'quarry-selector': {
+                include: ['quarry', 'quarry selector', 'location selector'],
+                exclude: []
+            },
+            'inspect-cart': {
+                include: ['inspect cart', 'cart structure'],
+                exclude: []
+            }
+        };
+        
         modules.forEach(module => {
-            // Count issues matching module keywords
-            const keywords = [
-                module.name.toLowerCase(),
-                module.id.toLowerCase()
-            ];
+            const moduleId = module.id.toLowerCase();
+            
+            // Get keywords for this module
+            const config = moduleKeywordMap[moduleId] || { include: [], exclude: [] };
+            const includeKeywords = [...config.include, module.name.toLowerCase()];
+            const excludeKeywords = config.exclude || [];
             
             const matchingIssues = issues.filter(issue => {
-                const summary = issue.fields.summary.toLowerCase();
-                const description = issue.fields.description?.toLowerCase() || '';
-                return keywords.some(kw => summary.includes(kw) || description.includes(kw));
+                const summary = (issue.fields.summary || '').toLowerCase();
+                
+                // Check if matches any include keyword
+                const matches = includeKeywords.some(kw => summary.includes(kw));
+                
+                // Check if should be excluded
+                const excluded = excludeKeywords.some(kw => summary.includes(kw));
+                
+                return matches && !excluded;
             });
             
             module.jiraStoryCount = matchingIssues.length;
+            module.jiraIssues = matchingIssues.map(i => ({
+                key: i.key,
+                summary: i.fields.summary
+            }));
         });
         
         return modules;
@@ -272,20 +323,46 @@ app.post('/api/tests/run', (req, res) => {
     const discoveredModules = discoverModules();
     const moduleTagsMap = {};
     discoveredModules.forEach(m => {
-        moduleTagsMap[m.id] = m.tags && m.tags.length > 0 ? m.tags[0] : `@${m.id.charAt(0).toUpperCase() + m.id.slice(1)}`;
+        // Find the module-specific tag (not @Regression, @Sanity etc.)
+        const genericTags = ['@Regression', '@Sanity', '@Smoke'];
+        const moduleSpecificTag = m.tags?.find(t => !genericTags.includes(t)) || 
+                                  m.tags?.[0] || 
+                                  `@${m.id.charAt(0).toUpperCase() + m.id.slice(1)}`;
+        moduleTagsMap[m.id] = moduleSpecificTag;
     });
     
     // Build tag expression
     let tags;
     if (customTags) {
-        // If custom tags provided (priority/regression/sanity), combine with module tags
-        const moduleTags = modules.map(m => moduleTagsMap[m] || `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
-        // Combine: (module tags) AND (custom tags)
-        tags = `(${moduleTags}) and (${customTags})`;
+        // Check if customTags contains priority tags (@P1, @P2, @P3)
+        const hasPriorityTags = /@P[1-3]/i.test(customTags);
+        
+        if (hasPriorityTags && modules.length === 1) {
+            // Single module with priority selection - use module tag AND priority
+            const moduleTag = moduleTagsMap[modules[0]] || `@${modules[0].charAt(0).toUpperCase() + modules[0].slice(1)}`;
+            tags = `(${moduleTag}) and (${customTags})`;
+            console.log(`Running ${modules[0]} with priority filter: ${tags}`);
+        } else if (hasPriorityTags) {
+            // Multiple modules with priority - just use priority tags (run across all)
+            tags = customTags;
+            console.log(`Running priority tests across modules: ${tags}`);
+        } else {
+            // Other custom tags (Sanity, Regression) - combine with module tags
+            const moduleTags = modules.map(m => moduleTagsMap[m] || `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
+            tags = `(${moduleTags}) and (${customTags})`;
+            console.log(`Running with custom tags: ${tags}`);
+        }
     } else {
         // Default to module-based tags only
         tags = modules.map(m => moduleTagsMap[m] || `@${m.charAt(0).toUpperCase() + m.slice(1)}`).join(' or ');
+        console.log(`Running module(s): ${tags}`);
     }
+    
+    console.log(`\n=== Test Execution Started ===`);
+    console.log(`Execution ID: ${executionId}`);
+    console.log(`Modules: ${modules.join(', ')}`);
+    console.log(`Tags: ${tags}`);
+    console.log(`==============================\n`);
     
     // Start test execution
     const cucumberArgs = [
@@ -301,13 +378,33 @@ app.post('/api/tests/run', (req, res) => {
         env: { ...process.env, HEADLESS: headless ? 'true' : 'false' }
     });
     
-    // Store execution info
+    // Store execution info with scenario names for display
+    const selectedModuleData = discoveredModules.filter(m => modules.includes(m.id));
+    const scenarioNames = [];
+    selectedModuleData.forEach(m => {
+        if (customTags && /@P[1-3]/i.test(customTags)) {
+            // Filter scenarios by priority
+            const priorities = customTags.match(/@P[1-3]/gi) || [];
+            m.scenarios.forEach(s => {
+                if (priorities.some(p => s.priority.toUpperCase() === p.replace('@', '').toUpperCase())) {
+                    scenarioNames.push({ module: m.name, name: s.name, priority: s.priority });
+                }
+            });
+        } else {
+            m.scenarios.forEach(s => {
+                scenarioNames.push({ module: m.name, name: s.name, priority: s.priority });
+            });
+        }
+    });
+    
     activeExecutions.set(executionId, {
         process: testProcess,
         startTime: new Date(),
         modules,
         selectedScenarios,
         tags,
+        scenarioNames,  // Added scenario names for execution display
+        currentScenarioIndex: 0,
         logs: [],
         status: 'running'
     });
@@ -426,7 +523,9 @@ app.get('/api/tests/execution/:executionId', (req, res) => {
         startTime: execution.startTime,
         endTime: execution.endTime,
         modules: execution.modules,
-        logsCount: execution.logs.length
+        logsCount: execution.logs.length,
+        scenarioNames: execution.scenarioNames || [],
+        tags: execution.tags || ''
     });
 });
 
@@ -449,6 +548,99 @@ app.post('/api/tests/execution/:executionId/stop', (req, res) => {
         res.json({ message: 'Execution stopped successfully' });
     } else {
         res.json({ message: 'Execution already completed' });
+    }
+});
+
+/**
+ * API: Get latest test results from test_results.json
+ */
+app.get('/api/tests/results', (req, res) => {
+    try {
+        const resultsPath = path.join(__dirname, '..', 'test_results.json');
+        if (fs.existsSync(resultsPath)) {
+            const content = fs.readFileSync(resultsPath, 'utf-8');
+            const results = JSON.parse(content);
+            
+            // Parse cucumber JSON format to extract module stats
+            const moduleStats = {};
+            const scenarios = [];
+            
+            results.forEach(feature => {
+                const featureName = feature.name || 'Unknown';
+                if (!moduleStats[featureName]) {
+                    moduleStats[featureName] = {
+                        name: featureName,
+                        total: 0,
+                        passed: 0,
+                        failed: 0,
+                        duration: 0,
+                        scenarios: []
+                    };
+                }
+                
+                (feature.elements || []).forEach(scenario => {
+                    if (scenario.type === 'scenario') {
+                        moduleStats[featureName].total++;
+                        
+                        let scenarioDuration = 0;
+                        let scenarioStatus = 'passed';
+                        const failedSteps = [];
+                        
+                        (scenario.steps || []).forEach(step => {
+                            if (step.result) {
+                                if (step.result.duration) {
+                                    scenarioDuration += step.result.duration;
+                                }
+                                if (step.result.status === 'failed') {
+                                    scenarioStatus = 'failed';
+                                    failedSteps.push({
+                                        name: step.name,
+                                        error: step.result.error_message || 'Step failed'
+                                    });
+                                }
+                            }
+                        });
+                        
+                        if (scenarioStatus === 'passed') {
+                            moduleStats[featureName].passed++;
+                        } else {
+                            moduleStats[featureName].failed++;
+                        }
+                        
+                        moduleStats[featureName].duration += scenarioDuration;
+                        
+                        const scenarioInfo = {
+                            name: scenario.name,
+                            feature: featureName,
+                            status: scenarioStatus,
+                            duration: scenarioDuration,
+                            tags: (scenario.tags || []).map(t => t.name),
+                            failedSteps: failedSteps
+                        };
+                        
+                        moduleStats[featureName].scenarios.push(scenarioInfo);
+                        scenarios.push(scenarioInfo);
+                    }
+                });
+            });
+            
+            res.json({
+                success: true,
+                modules: Object.values(moduleStats),
+                scenarios: scenarios,
+                summary: {
+                    total: scenarios.length,
+                    passed: scenarios.filter(s => s.status === 'passed').length,
+                    failed: scenarios.filter(s => s.status === 'failed').length,
+                    duration: scenarios.reduce((sum, s) => sum + s.duration, 0)
+                }
+            });
+        } else {
+            res.json({ success: false, message: 'No test results file found' });
+        }
+    } catch (error) {
+        console.error('Error reading test results:', error);
+        res.status(500).json({ error: 'Failed to read test results' });
     }
 });
 

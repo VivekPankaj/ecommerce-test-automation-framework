@@ -804,6 +804,14 @@
                 return (
                     <div className="max-w-7xl mx-auto px-6 py-8">
                         <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                            {/* Header with disabled STOP button */}
+                            <div className="flex justify-end mb-6">
+                                <button 
+                                    disabled={true}
+                                    className="px-4 py-2 rounded-lg font-semibold bg-gray-400 cursor-not-allowed opacity-50">
+                                    STOP
+                                </button>
+                            </div>
                             <div className="text-6xl mb-4">▶</div>
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">No Active Execution</h2>
                             <p className="text-gray-600 mb-6">Select a module from the Modules tab to start test execution</p>
@@ -831,6 +839,17 @@
 
             useEffect(() => {
                 loadHistory();
+                
+                // Listen for execution completion to refresh data
+                const handleExecutionComplete = () => {
+                    console.log('Execution completed - refreshing analytics...');
+                    loadHistory();
+                };
+                window.addEventListener('executionComplete', handleExecutionComplete);
+                
+                return () => {
+                    window.removeEventListener('executionComplete', handleExecutionComplete);
+                };
             }, []);
 
             const loadHistory = async () => {
@@ -884,6 +903,16 @@
 
             return (
                 <div className="max-w-7xl mx-auto px-6 py-8">
+                    {/* Header with Refresh Button */}
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800">Test Analytics</h2>
+                        <button 
+                            onClick={loadHistory}
+                            className="flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                            <span>🔄</span>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-400">
@@ -1101,35 +1130,114 @@
         // ============ EXECUTIVE REPORT TAB COMPONENT ============
         function ExecutiveReportTab() {
             const [reportData, setReportData] = useState(null);
+            const [moduleStats, setModuleStats] = useState([]);
+            const [scenarios, setScenarios] = useState([]);
+            const [expandedModules, setExpandedModules] = useState({});
             const [loading, setLoading] = useState(true);
 
             useEffect(() => {
                 loadReportData();
+                
+                // Listen for execution completion to refresh data
+                const handleExecutionComplete = () => {
+                    console.log('Execution completed - refreshing executive report...');
+                    setLoading(true);
+                    loadReportData();
+                };
+                window.addEventListener('executionComplete', handleExecutionComplete);
+                
+                return () => {
+                    window.removeEventListener('executionComplete', handleExecutionComplete);
+                };
             }, []);
 
             const loadReportData = async () => {
                 try {
-                    const response = await fetch(`${API_BASE}/tests/history`);
-                    const data = await response.json();
+                    // Fetch test results from the actual cucumber JSON output
+                    const [historyRes, resultsRes] = await Promise.all([
+                        fetch(`${API_BASE}/tests/history`),
+                        fetch(`${API_BASE}/tests/results`)
+                    ]);
                     
-                    // Get the most recent completed execution
-                    const recentExecution = data.history?.find(e => e.status === 'completed' && e.result);
+                    const historyData = await historyRes.json();
+                    const resultsData = await resultsRes.json();
                     
-                    if (recentExecution) {
-                        // Transform to report format
+                    // Get completed executions
+                    const completedExecs = historyData.history?.filter(e => e.status === 'completed' && e.result) || [];
+                    const recentExecution = completedExecs[0];
+                    
+                    // Use the module stats from test_results.json (actual cucumber output)
+                    let moduleStatsData = [];
+                    let totalScenarios = 0;
+                    let totalPassed = 0;
+                    let totalFailed = 0;
+                    let totalDuration = 0;
+                    
+                    if (resultsData.success && resultsData.modules) {
+                        moduleStatsData = resultsData.modules.map(m => {
+                            const duration = m.duration || 0;
+                            const durationSecs = duration / 1000000000; // Convert nanoseconds to seconds
+                            const mins = Math.floor(durationSecs / 60);
+                            const secs = Math.floor(durationSecs % 60);
+                            const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                            
+                            return {
+                                id: m.name.toLowerCase().replace(/\s+/g, '-'),
+                                name: m.name,
+                                total: m.total,
+                                passed: m.passed,
+                                failed: m.failed,
+                                passRate: m.total > 0 ? ((m.passed / m.total) * 100).toFixed(1) : '0.0',
+                                time: timeStr,
+                                duration: duration,
+                                status: m.failed > 0 ? 'failed' : 'passed',
+                                scenarios: (m.scenarios || []).map(s => ({
+                                    ...s,
+                                    durationStr: formatDuration(s.duration || 0)
+                                }))
+                            };
+                        });
+                        
+                        // Set scenarios from API
+                        if (resultsData.scenarios) {
+                            setScenarios(resultsData.scenarios.map(s => ({
+                                ...s,
+                                durationStr: formatDuration(s.duration || 0)
+                            })));
+                        }
+                        
+                        // Calculate totals from actual test results
+                        totalScenarios = moduleStatsData.reduce((sum, m) => sum + m.total, 0);
+                        totalPassed = moduleStatsData.reduce((sum, m) => sum + m.passed, 0);
+                        totalFailed = moduleStatsData.reduce((sum, m) => sum + m.failed, 0);
+                        totalDuration = moduleStatsData.reduce((sum, m) => sum + m.duration, 0);
+                    }
+                    
+                    setModuleStats(moduleStatsData);
+                    
+                    // Format total time
+                    const totalDurationSecs = totalDuration / 1000000000;
+                    const totalMins = Math.floor(totalDurationSecs / 60);
+                    const totalSecs = Math.floor(totalDurationSecs % 60);
+                    const totalTime = totalMins > 0 ? `${totalMins}m ${totalSecs}s` : `${totalSecs}s`;
+                    
+                    if (moduleStatsData.length > 0 || recentExecution) {
                         const report = {
-                            timestamp: new Date(recentExecution.startTime).toLocaleString(),
-                            duration: recentExecution.duration,
+                            timestamp: recentExecution 
+                                ? new Date(recentExecution.startTime).toLocaleString()
+                                : new Date().toLocaleString(),
+                            duration: recentExecution?.duration || totalDuration,
                             summary: {
-                                total: recentExecution.result.total || 0,
-                                passed: recentExecution.result.passed || 0,
-                                failed: recentExecution.result.failed || 0,
-                                passRate: recentExecution.result.total > 0 
-                                    ? ((recentExecution.result.passed / recentExecution.result.total) * 100).toFixed(1)
-                                    : 0
+                                total: totalScenarios,
+                                passed: totalPassed,
+                                failed: totalFailed,
+                                passRate: totalScenarios > 0 
+                                    ? ((totalPassed / totalScenarios) * 100).toFixed(1)
+                                    : '0.0',
+                                totalTime
                             },
-                            modules: recentExecution.modules || [],
-                            executionId: recentExecution.id
+                            modules: moduleStatsData.map(m => m.name),
+                            executionId: recentExecution?.id || 'N/A'
                         };
                         setReportData(report);
                     }
@@ -1138,6 +1246,23 @@
                 } finally {
                     setLoading(false);
                 }
+            };
+            
+            const formatDuration = (nanoseconds) => {
+                const totalSecs = Math.floor(nanoseconds / 1000000000);
+                const mins = Math.floor(totalSecs / 60);
+                const secs = totalSecs % 60;
+                if (mins > 0) {
+                    return `${mins}m ${secs}s`;
+                }
+                return `${secs}s`;
+            };
+            
+            const toggleModule = (moduleId) => {
+                setExpandedModules(prev => ({
+                    ...prev,
+                    [moduleId]: !prev[moduleId]
+                }));
             };
 
             const exportToPDF = () => {
@@ -1162,6 +1287,14 @@
             if (!reportData) {
                 return (
                     <div className="max-w-7xl mx-auto px-6 py-8">
+                        <div className="flex justify-end mb-4">
+                            <button 
+                                onClick={loadReportData}
+                                className="flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                                <span>🔄</span>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
                         <div className="bg-white rounded-xl shadow-md p-12 text-center">
                             <div className="text-6xl mb-4">📋</div>
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">No Report Data Available</h2>
@@ -1185,6 +1318,12 @@
                     {/* Export Buttons */}
                     <div className="bg-white border-b border-gray-200">
                         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end space-x-3">
+                            <button 
+                                onClick={loadReportData}
+                                className="flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                                <span>🔄</span>
+                                <span>Refresh</span>
+                            </button>
                             <button 
                                 onClick={exportToPDF}
                                 className="vulcan-button px-6 py-2 rounded-lg font-semibold flex items-center space-x-2"
@@ -1272,39 +1411,188 @@
                             </div>
                         </div>
 
-                        {/* Module Summary Table */}
+                        {/* Module Summary Table - Matching cucumber-report.html format */}
                         <div className="bg-white rounded-xl shadow-md overflow-hidden">
                             <div className="bg-gradient-to-r from-vulcan-blue to-vulcan-light-blue text-white px-6 py-4">
-                                <h2 className="text-xl font-bold">Module Execution Summary</h2>
+                                <h2 className="text-xl font-bold">📊 Executive Summary - Module Status</h2>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                    <thead className="bg-vulcan-blue text-white">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Module Name</th>
-                                            <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                            <th className="px-4 py-3 text-left text-sm font-semibold">Module</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Status</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Total</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Passed</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Failed</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Pass Rate</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Time</th>
+                                            <th className="px-4 py-3 text-center text-sm font-semibold">Progress</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {reportData.modules.length === 0 ? (
+                                        {moduleStats.length === 0 ? (
                                             <tr>
-                                                <td colSpan="3" className="px-6 py-12 text-center text-gray-500">
-                                                    No module data available
+                                                <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                                                    No module data available. Run tests to generate report.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            reportData.modules.map((module, idx) => (
-                                                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                                                    <td className="px-6 py-4 text-sm text-gray-600">{idx + 1}</td>
-                                                    <td className="px-6 py-4 text-sm text-gray-800 font-medium">{module}</td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className="status-badge status-passed">COMPLETED</span>
-                                                    </td>
-                                                </tr>
+                                            moduleStats.map((module, idx) => (
+                                                <React.Fragment key={idx}>
+                                                    <tr 
+                                                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                                                        onClick={() => toggleModule(module.id)}
+                                                    >
+                                                        <td className="px-4 py-4 text-sm text-gray-800 font-medium">
+                                                            <span className="mr-2">{expandedModules[module.id] ? '📂' : '�'}</span>
+                                                            {module.name}
+                                                            <span className="ml-2 text-gray-400 text-xs">
+                                                                {expandedModules[module.id] ? '▼' : '▶'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center">
+                                                            {module.failed === 0 ? (
+                                                                <span className="text-green-600 text-xl">✅</span>
+                                                            ) : (
+                                                                <span className="text-red-600 text-xl">❌</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-sm text-gray-800 font-semibold">
+                                                            {module.total}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-sm text-green-600 font-semibold">
+                                                            {module.passed}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-sm text-red-600 font-semibold">
+                                                            {module.failed}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-sm font-semibold"
+                                                            style={{color: parseFloat(module.passRate) >= 90 ? '#16a34a' : parseFloat(module.passRate) >= 70 ? '#ca8a04' : '#dc2626'}}>
+                                                            {module.passRate}%
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-sm text-gray-600">
+                                                            {module.time}
+                                                        </td>
+                                                        <td className="px-4 py-4">
+                                                            <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                                                <div className="h-full flex">
+                                                                    <div 
+                                                                        className="bg-green-500 h-full" 
+                                                                        style={{width: `${(module.passed / module.total) * 100}%`}}
+                                                                    ></div>
+                                                                    <div 
+                                                                        className="bg-red-500 h-full" 
+                                                                        style={{width: `${(module.failed / module.total) * 100}%`}}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {/* Expanded Scenario Details */}
+                                                    {expandedModules[module.id] && module.scenarios && (
+                                                        <tr>
+                                                            <td colSpan="8" className="px-0 py-0 bg-gray-50">
+                                                                <div className="px-8 py-4">
+                                                                    <table className="w-full text-sm">
+                                                                        <thead>
+                                                                            <tr className="bg-gray-100">
+                                                                                <th className="px-3 py-2 text-left font-medium text-gray-600">Scenario</th>
+                                                                                <th className="px-3 py-2 text-center font-medium text-gray-600 w-20">Status</th>
+                                                                                <th className="px-3 py-2 text-center font-medium text-gray-600 w-24">Duration</th>
+                                                                                <th className="px-3 py-2 text-left font-medium text-gray-600">Tags</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {module.scenarios.map((scenario, sIdx) => (
+                                                                                <tr key={sIdx} className="border-b border-gray-200 hover:bg-white">
+                                                                                    <td className="px-3 py-2 text-gray-800">
+                                                                                        {scenario.status === 'passed' ? (
+                                                                                            <span className="mr-2 text-green-500">✓</span>
+                                                                                        ) : (
+                                                                                            <span className="mr-2 text-red-500">✗</span>
+                                                                                        )}
+                                                                                        {scenario.name}
+                                                                                    </td>
+                                                                                    <td className="px-3 py-2 text-center">
+                                                                                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                                                            scenario.status === 'passed' 
+                                                                                                ? 'bg-green-100 text-green-800' 
+                                                                                                : 'bg-red-100 text-red-800'
+                                                                                        }`}>
+                                                                                            {scenario.status.toUpperCase()}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="px-3 py-2 text-center text-gray-600">
+                                                                                        {scenario.durationStr}
+                                                                                    </td>
+                                                                                    <td className="px-3 py-2">
+                                                                                        {(scenario.tags || []).map((tag, tIdx) => (
+                                                                                            <span key={tIdx} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded mr-1 mb-1">
+                                                                                                {tag}
+                                                                                            </span>
+                                                                                        ))}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </React.Fragment>
                                             ))
                                         )}
                                     </tbody>
+                                    {/* Total Row */}
+                                    {moduleStats.length > 0 && (
+                                        <tfoot className="bg-gray-100 font-bold">
+                                            <tr className="border-t-2 border-gray-300">
+                                                <td className="px-4 py-4 text-sm text-gray-800">
+                                                    <span className="mr-2">📊</span>
+                                                    TOTAL
+                                                </td>
+                                                <td className="px-4 py-4 text-center">
+                                                    {reportData.summary.failed > 0 ? (
+                                                        <span className="text-red-600 text-xl">❌</span>
+                                                    ) : (
+                                                        <span className="text-green-600 text-xl">✅</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-4 text-center text-sm text-gray-800">
+                                                    {reportData.summary.total}
+                                                </td>
+                                                <td className="px-4 py-4 text-center text-sm text-green-600">
+                                                    {reportData.summary.passed}
+                                                </td>
+                                                <td className="px-4 py-4 text-center text-sm text-red-600">
+                                                    {reportData.summary.failed}
+                                                </td>
+                                                <td className="px-4 py-4 text-center text-sm"
+                                                    style={{color: parseFloat(reportData.summary.passRate) >= 90 ? '#16a34a' : parseFloat(reportData.summary.passRate) >= 70 ? '#ca8a04' : '#dc2626'}}>
+                                                    {reportData.summary.passRate}%
+                                                </td>
+                                                <td className="px-4 py-4 text-center text-sm text-gray-600">
+                                                    {reportData.summary.totalTime}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full flex">
+                                                            <div 
+                                                                className="bg-green-500 h-full" 
+                                                                style={{width: `${(reportData.summary.passed / reportData.summary.total) * 100}%`}}
+                                                            ></div>
+                                                            <div 
+                                                                className="bg-red-500 h-full" 
+                                                                style={{width: `${(reportData.summary.failed / reportData.summary.total) * 100}%`}}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    )}
                                 </table>
                             </div>
                         </div>
@@ -1749,7 +2037,30 @@
         function ExecutionPanel({ executionId, onClose, fullScreen }) {
             const [logs, setLogs] = useState([]);
             const [status, setStatus] = useState('running');
+            const [executionInfo, setExecutionInfo] = useState(null);
+            const [currentScenario, setCurrentScenario] = useState('');
             const logsEndRef = useRef(null);
+
+            // Fetch execution info including scenario names
+            useEffect(() => {
+                const fetchExecutionInfo = async () => {
+                    try {
+                        const response = await fetch(`${API_BASE}/tests/execution/${executionId}`);
+                        const data = await response.json();
+                        setExecutionInfo(data);
+                    } catch (error) {
+                        console.error('Error fetching execution info:', error);
+                    }
+                };
+                fetchExecutionInfo();
+                // Poll for updates every 2 seconds while running
+                const interval = setInterval(() => {
+                    if (status === 'running') {
+                        fetchExecutionInfo();
+                    }
+                }, 2000);
+                return () => clearInterval(interval);
+            }, [executionId, status]);
 
             useEffect(() => {
                 // Connect to SSE stream
@@ -1761,8 +2072,32 @@
                     if (data.type === 'complete') {
                         setStatus(data.status);
                         eventSource.close();
+                        // Dispatch event to notify other components (Analytics, Executive Report)
+                        window.dispatchEvent(new CustomEvent('executionComplete', { 
+                            detail: { executionId, status: data.status } 
+                        }));
                     } else if (data.type !== 'connected') {
                         setLogs(prev => [...prev, data]);
+                        // Detect scenario/step info from log
+                        if (data.message) {
+                            // Look for Scenario: pattern
+                            if (data.message.includes('Scenario:')) {
+                                const match = data.message.match(/Scenario:\s*(.+)/);
+                                if (match) setCurrentScenario(match[1].trim());
+                            }
+                            // Look for common step patterns (✓ indicates completed step)
+                            else if (data.message.startsWith('✓ ') || data.message.includes('...')) {
+                                // Extract step description
+                                const stepMatch = data.message.match(/(?:✓\s+)?(.+?)(?:\.\.\.|$)/);
+                                if (stepMatch && stepMatch[1].length > 10) {
+                                    setCurrentScenario(stepMatch[1].trim());
+                                }
+                            }
+                            // Look for "Navigating to" patterns
+                            else if (data.message.match(/^(Navigating|Clicking|Verifying|Checking|Hovering|Setting|Adding)/)) {
+                                setCurrentScenario(data.message.replace('...', '').trim());
+                            }
+                        }
                     }
                 });
 
@@ -1803,14 +2138,35 @@
                                         {status === 'running' && <div className="w-2 h-2 bg-yellow-400 rounded-full pulse-dot"></div>}
                                         <span className="font-semibold capitalize text-white">{status}</span>
                                     </div>
-                                    {status === 'running' && (
-                                        <button onClick={stopExecution} 
-                                                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold transition-colors">
-                                            STOP
-                                        </button>
-                                    )}
+                                    <button 
+                                        onClick={stopExecution} 
+                                        disabled={status !== 'running'}
+                                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                                            status === 'running' 
+                                                ? 'bg-red-500 hover:bg-red-600 cursor-pointer' 
+                                                : 'bg-gray-400 cursor-not-allowed opacity-50'
+                                        }`}>
+                                        STOP
+                                    </button>
                                 </div>
                             </div>
+                            {/* Current Scenario Display */}
+                            {status === 'running' && currentScenario && (
+                                <div className="mt-4 bg-blue-500/20 border border-blue-400 rounded-lg p-3">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                                        <span className="text-blue-200 text-sm font-medium">Currently Running:</span>
+                                        <span className="text-white font-semibold">{currentScenario}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Execution Summary */}
+                            {executionInfo && executionInfo.scenarioNames && executionInfo.scenarioNames.length > 0 && (
+                                <div className="mt-3 text-gray-300 text-sm">
+                                    <span>Total Scenarios: {executionInfo.scenarioNames.length}</span>
+                                    {executionInfo.tags && <span className="ml-4">Tags: {executionInfo.tags}</span>}
+                                </div>
+                            )}
                         </div>
 
                         {/* Logs */}
@@ -1850,12 +2206,16 @@
                                         {status === 'running' && <div className="w-2 h-2 bg-yellow-400 rounded-full pulse-dot"></div>}
                                         <span className="font-semibold capitalize text-white">{status}</span>
                                     </div>
-                                    {status === 'running' && (
-                                        <button onClick={stopExecution} 
-                                                className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-semibold transition-colors">
-                                            STOP
-                                        </button>
-                                    )}
+                                    <button 
+                                        onClick={stopExecution} 
+                                        disabled={status !== 'running'}
+                                        className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                                            status === 'running' 
+                                                ? 'bg-red-500 hover:bg-red-600 cursor-pointer' 
+                                                : 'bg-gray-400 cursor-not-allowed opacity-50'
+                                        }`}>
+                                        STOP
+                                    </button>
                                     {onClose && (
                                         <button onClick={onClose} 
                                                 className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
@@ -1864,6 +2224,23 @@
                                     )}
                                 </div>
                             </div>
+                            {/* Current Scenario Display */}
+                            {status === 'running' && currentScenario && (
+                                <div className="mt-4 bg-blue-500/20 border border-blue-400 rounded-lg p-3">
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                                        <span className="text-blue-200 text-sm font-medium">Currently Running:</span>
+                                        <span className="text-white font-semibold">{currentScenario}</span>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Execution Summary */}
+                            {executionInfo && executionInfo.scenarioNames && executionInfo.scenarioNames.length > 0 && (
+                                <div className="mt-3 text-gray-300 text-sm">
+                                    <span>Total Scenarios: {executionInfo.scenarioNames.length}</span>
+                                    {executionInfo.tags && <span className="ml-4">Tags: {executionInfo.tags}</span>}
+                                </div>
+                            )}
                         </div>
 
                         {/* Logs */}
