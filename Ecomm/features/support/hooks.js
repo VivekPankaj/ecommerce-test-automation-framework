@@ -24,6 +24,8 @@ Before(async function (scenario) {
     // to prevent the browser permission popup from appearing.
     const context = await this.browser.newContext({
       geolocation: { latitude: 39.8283, longitude: -98.5795 }, // center of US by default
+      // Clear all storage to ensure clean state for each test
+      storageState: undefined,
       // viewport, locale, etc. can be added here if needed
     });
 
@@ -33,6 +35,14 @@ Before(async function (scenario) {
     await context.grantPermissions(['geolocation'], { origin });
 
     this.page = await context.newPage();
+    
+    // Clear any existing storage and cookies for the QA site to ensure fresh login
+    await this.page.goto(origin);
+    await context.clearCookies();
+    await this.page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+    });
   });
 
   AfterStep( async function ({result}) {

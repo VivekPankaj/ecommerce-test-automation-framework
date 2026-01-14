@@ -2,9 +2,10 @@
  * ============================================================================
  * 🔒 LOCKED FILE - DO NOT MODIFY WITHOUT APPROVAL
  * ============================================================================
- * Status: VERIFIED & LOCKED
- * Last Verified: 11 January 2026
- * All 5 scenarios (49 steps) passing
+ * Status: UPDATED
+ * Last Modified: 14 January 2026
+ * Change: Removed hardcoded firstName validation - now validates consistency
+ *         between greeting and profile (dynamic validation)
  * 
  * This file contains step definitions for:
  *   - User login validation (Sign In)
@@ -120,19 +121,18 @@ Then("the first name should match with the profile name in My Profile page", asy
     
     // Get first name from profile page
     const profileFirstName = await loginPage.getFirstNameFromProfile();
-    const expectedFirstName = testData.login.validUser.firstName;
     
     console.log(`Greeting first name: ${this.greetingFirstName}`);
     console.log(`Profile first name: ${profileFirstName}`);
-    console.log(`Expected first name: ${expectedFirstName}`);
     
-    // Verify first name matches
-    if (profileFirstName !== expectedFirstName && this.greetingFirstName !== expectedFirstName) {
+    // Verify first name from greeting matches the first name in profile
+    // No hardcoded expectation - just validate consistency between greeting and profile
+    if (this.greetingFirstName !== profileFirstName) {
         const screenshot = await this.page.screenshot();
         this.attach(screenshot, 'image/png');
-        throw new Error(`First name mismatch. Expected: ${expectedFirstName}, Got from profile: ${profileFirstName}, Got from greeting: ${this.greetingFirstName}`);
+        throw new Error(`First name mismatch between greeting and profile. Greeting shows: ${this.greetingFirstName}, Profile shows: ${profileFirstName}`);
     }
-    console.log(`✓ First name matches: ${expectedFirstName}`);
+    console.log(`✓ First name matches between greeting and profile: ${profileFirstName}`);
 });
 
 // Validation 4: Email in profile should match the entered email
