@@ -722,6 +722,35 @@ const htmlReport = `
             body { background: white; padding: 0; }
             .expand-icon { display: none; }
         }
+        
+        /* Execution Info Bar */
+        .execution-info {
+            background: linear-gradient(135deg, #002366 0%, #003087 100%);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 3px solid #0066CC;
+        }
+        .exec-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 0.9em;
+        }
+        .exec-info-item .label {
+            color: #99b3cc;
+            font-weight: 500;
+        }
+        .exec-info-item .value {
+            color: white;
+            font-weight: 600;
+        }
+        .exec-info-item .icon {
+            font-size: 1.1em;
+        }
     </style>
 </head>
 <body>
@@ -732,6 +761,35 @@ const htmlReport = `
             <h2>Test Execution Report</h2>
             <p class="timestamp">Generated: ${new Date().toLocaleString()}</p>
             <p class="timestamp">Total Execution Time: ${executionTime}</p>
+        </div>
+        
+        <!-- Execution Info Bar -->
+        <div class="execution-info">
+            <div class="exec-info-item">
+                <span class="icon">🖥️</span>
+                <span class="label">Platform:</span>
+                <span class="value">macOS (Desktop)</span>
+            </div>
+            <div class="exec-info-item">
+                <span class="icon">🌐</span>
+                <span class="label">Browser:</span>
+                <span class="value">Chromium (Playwright)</span>
+            </div>
+            <div class="exec-info-item">
+                <span class="icon">🌍</span>
+                <span class="label">Environment:</span>
+                <span class="value">QA</span>
+            </div>
+            <div class="exec-info-item">
+                <span class="icon">🏷️</span>
+                <span class="label">Test Suite:</span>
+                <span class="value">Regression</span>
+            </div>
+            <div class="exec-info-item">
+                <span class="icon">🔧</span>
+                <span class="label">Framework:</span>
+                <span class="value">Playwright + Cucumber.js</span>
+            </div>
         </div>
 
         <div class="export-buttons">
@@ -780,7 +838,7 @@ const htmlReport = `
 
         <div class="footer">
             <p><strong>Vulcan Materials Company</strong> - E-Commerce Storefront Automation</p>
-            <p>Framework: Playwright + Cucumber.js | Browser: Chromium</p>
+            <p>© ${new Date().getFullYear()} Vulcan Materials Company. All Rights Reserved.</p>
         </div>
     </div>
     

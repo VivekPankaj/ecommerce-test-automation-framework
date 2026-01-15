@@ -77,6 +77,7 @@
                 { id: 'analytics', label: 'Analytics', icon: '📊' },
                 { id: 'report', label: 'Executive Report', icon: '📋' },
                 { id: 'ai', label: 'AI Commander', icon: '🤖' },
+                { id: 'ai-features', label: 'AI Feature Generator', icon: '✨' },
                 { id: 'defects', label: 'Defects', icon: '⚠' },
             ];
 
@@ -1828,6 +1829,1061 @@
             );
         }
 
+        // ============ AI FEATURE GENERATOR TAB COMPONENT ============
+        function AIFeatureGeneratorTab() {
+            const [jiraInput, setJiraInput] = useState('');
+            const [inputType, setInputType] = useState('story'); // story, epic, filter
+            const [loading, setLoading] = useState(false);
+            const [generatedScenarios, setGeneratedScenarios] = useState([]);
+            const [selectedScenarios, setSelectedScenarios] = useState(new Set()); // Track selected scenarios
+            const [acceptanceCriteria, setAcceptanceCriteria] = useState([]);
+            const [jiraDetails, setJiraDetails] = useState(null);
+            const [matchResults, setMatchResults] = useState(null);
+            const [checkingMatches, setCheckingMatches] = useState(false);
+            const [selectedModule, setSelectedModule] = useState('');
+            const [newFeatureFileName, setNewFeatureFileName] = useState('');
+            const [modules, setModules] = useState([]);
+            const [saving, setSaving] = useState(false);
+            const [saveResult, setSaveResult] = useState(null);
+            
+            // Step definition states
+            const [stepDefResults, setStepDefResults] = useState(null);
+            const [checkingStepDefs, setCheckingStepDefs] = useState(false);
+            const [generatedStepDefs, setGeneratedStepDefs] = useState(null);
+            const [generatingStepDefs, setGeneratingStepDefs] = useState(false);
+            const [savingStepDefs, setSavingStepDefs] = useState(false);
+            const [stepDefSaveResult, setStepDefSaveResult] = useState(null);
+            
+            // Smart analysis states
+            const [smartAnalysis, setSmartAnalysis] = useState(null);
+            const [analyzingScenarios, setAnalyzingScenarios] = useState(false);
+            const [useSmartMode, setUseSmartMode] = useState(true); // Default to smart mode
+
+            // Toggle scenario selection
+            const toggleScenarioSelection = (idx) => {
+                setSelectedScenarios(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(idx)) {
+                        newSet.delete(idx);
+                    } else {
+                        newSet.add(idx);
+                    }
+                    return newSet;
+                });
+            };
+
+            // Select/Deselect all scenarios
+            const toggleSelectAll = () => {
+                if (selectedScenarios.size === generatedScenarios.length) {
+                    setSelectedScenarios(new Set());
+                } else {
+                    setSelectedScenarios(new Set(generatedScenarios.map((_, idx) => idx)));
+                }
+            };
+
+            // Get only selected scenarios for saving
+            const getSelectedScenarios = () => {
+                return generatedScenarios.filter((_, idx) => selectedScenarios.has(idx));
+            };
+
+            // Get matches for a specific scenario
+            const getMatchesForScenario = (scenarioName) => {
+                if (!matchResults || !matchResults.matches) return [];
+                return matchResults.matches.filter(m => 
+                    m.newScenario && m.newScenario.toLowerCase() === scenarioName.toLowerCase()
+                );
+            };
+
+            // Check if a scenario has matches
+            const hasMatchForScenario = (scenarioName) => {
+                return getMatchesForScenario(scenarioName).length > 0;
+            };
+
+            useEffect(() => {
+                loadModules();
+            }, []);
+
+            const loadModules = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/modules`);
+                    const data = await response.json();
+                    setModules(data.modules || []);
+                } catch (error) {
+                    console.error('Error loading modules:', error);
+                }
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!jiraInput.trim()) return;
+
+                setLoading(true);
+                setGeneratedScenarios([]);
+                setAcceptanceCriteria([]);
+                setJiraDetails(null);
+                setMatchResults(null);
+                setSaveResult(null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/ai/generate-scenarios`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jiraInput: jiraInput.trim(),
+                            inputType: inputType
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setJiraDetails(data.jiraDetails);
+                        setAcceptanceCriteria(data.acceptanceCriteria || []);
+                        setGeneratedScenarios(data.scenarios || []);
+                        // Auto-select all scenarios by default
+                        setSelectedScenarios(new Set((data.scenarios || []).map((_, idx) => idx)));
+                    } else {
+                        alert(data.error || 'Failed to generate scenarios');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to connect to server');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleCheckMatches = async () => {
+                if (generatedScenarios.length === 0) return;
+
+                setCheckingMatches(true);
+                setMatchResults(null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/ai/check-scenario-matches`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            scenarios: generatedScenarios
+                        })
+                    });
+
+                    const data = await response.json();
+                    setMatchResults(data);
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to check matches');
+                } finally {
+                    setCheckingMatches(false);
+                }
+            };
+
+            // Smart Analysis - Determines extend vs create new
+            const handleSmartAnalysis = async () => {
+                if (!selectedModule || generatedScenarios.length === 0) return;
+
+                setAnalyzingScenarios(true);
+                setSmartAnalysis(null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/ai/smart-scenario-analysis`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            scenarios: generatedScenarios,
+                            moduleId: selectedModule
+                        })
+                    });
+
+                    const data = await response.json();
+                    setSmartAnalysis(data);
+                } catch (error) {
+                    console.error('Error:', error);
+                    setSmartAnalysis({ success: false, error: 'Failed to analyze scenarios' });
+                } finally {
+                    setAnalyzingScenarios(false);
+                }
+            };
+
+            // Apply smart recommendations
+            const handleApplySmartRecommendations = async () => {
+                if (!smartAnalysis || !selectedModule) return;
+
+                setSaving(true);
+                setSaveResult(null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/ai/apply-smart-scenarios`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            moduleId: selectedModule,
+                            newScenarios: smartAnalysis.newScenarios,
+                            extendExisting: smartAnalysis.extendExisting,
+                            jiraKey: jiraInput.trim()
+                        })
+                    });
+
+                    const data = await response.json();
+                    setSaveResult(data);
+
+                    if (data.success) {
+                        loadModules();
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    setSaveResult({ success: false, error: 'Failed to apply recommendations' });
+                } finally {
+                    setSaving(false);
+                }
+            };
+
+            const handleAddToExisting = async () => {
+                const scenariosToSave = getSelectedScenarios();
+                if (!selectedModule || scenariosToSave.length === 0) {
+                    alert('Please select at least one scenario to save');
+                    return;
+                }
+
+                setSaving(true);
+                setSaveResult(null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/ai/add-to-feature`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            moduleId: selectedModule,
+                            scenarios: scenariosToSave,
+                            jiraKey: jiraInput.trim()
+                        })
+                    });
+
+                    const data = await response.json();
+                    setSaveResult(data);
+                    
+                    if (data.success) {
+                        loadModules(); // Refresh modules
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    setSaveResult({ success: false, error: 'Failed to save scenarios' });
+                } finally {
+                    setSaving(false);
+                }
+            };
+
+            const handleCreateNewFeature = async () => {
+                const scenariosToSave = getSelectedScenarios();
+                if (!newFeatureFileName.trim() || scenariosToSave.length === 0) {
+                    alert('Please select at least one scenario to save');
+                    return;
+                }
+
+                setSaving(true);
+                setSaveResult(null);
+
+                try {
+                    const response = await fetch(`${API_BASE}/ai/create-feature`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fileName: newFeatureFileName.trim(),
+                            scenarios: scenariosToSave,
+                            jiraKey: jiraInput.trim(),
+                            featureTitle: jiraDetails?.summary || 'New Feature'
+                        })
+                    });
+
+                    const data = await response.json();
+                    setSaveResult(data);
+                    
+                    if (data.success) {
+                        loadModules(); // Refresh modules
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    setSaveResult({ success: false, error: 'Failed to create feature file' });
+                } finally {
+                    setSaving(false);
+                }
+            };
+
+            // Check which steps have existing definitions
+            const handleCheckStepDefinitions = async () => {
+                const scenariosToCheck = getSelectedScenarios();
+                if (!scenariosToCheck || scenariosToCheck.length === 0) {
+                    alert('Please select at least one scenario to check step definitions');
+                    return;
+                }
+                
+                setCheckingStepDefs(true);
+                try {
+                    const response = await fetch('/api/ai/check-step-definitions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scenarios: scenariosToCheck })
+                    });
+                    const data = await response.json();
+                    setStepDefResults(data);
+                } catch (error) {
+                    console.error('Error checking step definitions:', error);
+                    setStepDefResults({ success: false, error: 'Failed to check step definitions' });
+                } finally {
+                    setCheckingStepDefs(false);
+                }
+            };
+
+            // Generate code for missing step definitions
+            const handleGenerateStepDefinitions = async () => {
+                if (!stepDefResults || !stepDefResults.missingSteps || stepDefResults.missingSteps.length === 0) return;
+                
+                setGeneratingStepDefs(true);
+                try {
+                    const scenariosToCheck = getSelectedScenarios();
+                    const moduleName = selectedModule || (scenariosToCheck[0]?.module) || 'common';
+                    const response = await fetch('/api/ai/generate-step-definitions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            missingSteps: stepDefResults.missingSteps,
+                            moduleName: moduleName
+                        })
+                    });
+                    const data = await response.json();
+                    setGeneratedStepDefs(data);
+                } catch (error) {
+                    console.error('Error generating step definitions:', error);
+                    setGeneratedStepDefs({ success: false, error: 'Failed to generate step definitions' });
+                } finally {
+                    setGeneratingStepDefs(false);
+                }
+            };
+
+            return (
+                <div className="flex h-full">
+                    {/* Left Panel - Input & Jira Details */}
+                    <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-200">
+                        <div className="mb-6">
+                            <h1 className="text-2xl font-bold text-gray-800 mb-2">✨ AI Feature Generator</h1>
+                            <p className="text-gray-600 text-sm">Generate test scenarios from Jira stories, epics, or filters</p>
+                        </div>
+
+                        {/* Input Form */}
+                        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                            <form onSubmit={handleSubmit}>
+                                <div className="mb-4">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Input Type</label>
+                                    <div className="flex space-x-4">
+                                        {['story', 'epic', 'filter'].map(type => (
+                                            <label key={type} className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="inputType"
+                                                    value={type}
+                                                    checked={inputType === type}
+                                                    onChange={(e) => setInputType(e.target.value)}
+                                                    className="mr-2"
+                                                />
+                                                <span className="capitalize">{type === 'filter' ? 'Jira Filter' : `Jira ${type}`}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        {inputType === 'filter' ? 'Filter ID or JQL' : `${inputType.charAt(0).toUpperCase() + inputType.slice(1)} Key`}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={jiraInput}
+                                        onChange={(e) => setJiraInput(e.target.value)}
+                                        placeholder={inputType === 'filter' ? 'e.g., 12345 or project = ECOMM' : `e.g., ECOMM-${inputType === 'epic' ? '100' : '1234'}`}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                <button 
+                                    type="submit"
+                                    className="w-full vulcan-button px-6 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2"
+                                    disabled={loading || !jiraInput.trim()}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Analyzing Jira & Generating Scenarios...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>🔍</span>
+                                            <span>Generate Test Scenarios</span>
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Jira Details */}
+                        {jiraDetails && (
+                            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4">📋 Jira Details</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <span className="text-xs text-gray-500 uppercase">Key</span>
+                                            <p className="font-semibold text-blue-700">{jiraDetails.key}</p>
+                                        </div>
+                                        {jiraDetails.type && (
+                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                jiraDetails.type === 'Epic' 
+                                                    ? 'bg-purple-100 text-purple-700' 
+                                                    : 'bg-blue-100 text-blue-700'
+                                            }`}>
+                                                {jiraDetails.type}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="text-xs text-gray-500 uppercase">Summary</span>
+                                        <p className="text-gray-800">{jiraDetails.summary}</p>
+                                    </div>
+                                    {jiraDetails.status && (
+                                        <div>
+                                            <span className="text-xs text-gray-500 uppercase">Status</span>
+                                            <p className="text-gray-700">{jiraDetails.status}</p>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Child Stories for Epic */}
+                                    {jiraDetails.childStories && jiraDetails.childStories.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-xs text-gray-500 uppercase">Child Stories</span>
+                                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                                                    {jiraDetails.childStories.length} stories
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {jiraDetails.childStories.map((child, idx) => (
+                                                    <div key={idx} className="flex items-center p-2 bg-gray-50 rounded-lg text-sm">
+                                                        <span className="font-mono text-purple-600 font-semibold mr-2">{child.key}</span>
+                                                        <span className="text-gray-700 truncate flex-1">{child.summary}</span>
+                                                        <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                                                            child.status === 'Done' ? 'bg-green-100 text-green-700' :
+                                                            child.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                            {child.status}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Acceptance Criteria */}
+                        {acceptanceCriteria.length > 0 && (
+                            <div className="bg-white rounded-xl shadow-md p-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4">✅ Acceptance Criteria</h3>
+                                <ul className="space-y-2">
+                                    {acceptanceCriteria.map((ac, idx) => (
+                                        <li key={idx} className="flex items-start">
+                                            <span className="text-green-500 mr-2">•</span>
+                                            <span className="text-gray-700 text-sm">{ac}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Panel - Generated Scenarios & Actions */}
+                    <div className="w-1/2 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-2">Generated Test Scenarios</h2>
+                            <p className="text-gray-600 text-sm">Review and save scenarios to feature files</p>
+                        </div>
+
+                        {/* Scenarios List */}
+                        {generatedScenarios.length > 0 ? (
+                            <>
+                                <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-sm font-semibold text-gray-700">
+                                            {generatedScenarios.length} Scenario{generatedScenarios.length !== 1 ? 's' : ''} Generated
+                                        </span>
+                                        <button
+                                            onClick={handleCheckMatches}
+                                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-semibold hover:bg-blue-200 transition-colors flex items-center space-x-2"
+                                            disabled={checkingMatches}
+                                        >
+                                            {checkingMatches ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
+                                                    <span>Checking...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>🔎</span>
+                                                    <span>Check if Scenarios Exist</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* Select All / Count Header */}
+                                    <div className="flex items-center justify-between mb-3 px-1">
+                                        <label className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedScenarios.size === generatedScenarios.length && generatedScenarios.length > 0}
+                                                onChange={toggleSelectAll}
+                                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mr-2"
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Select All</span>
+                                        </label>
+                                        <span className="text-sm text-gray-500">
+                                            {selectedScenarios.size} of {generatedScenarios.length} selected
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                                        {generatedScenarios.map((scenario, idx) => {
+                                            const scenarioMatches = getMatchesForScenario(scenario.name);
+                                            const hasMatch = scenarioMatches.length > 0;
+                                            
+                                            return (
+                                            <div 
+                                                key={idx} 
+                                                className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                                                    hasMatch 
+                                                        ? 'border-yellow-400 bg-yellow-50' 
+                                                        : selectedScenarios.has(idx) 
+                                                            ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200' 
+                                                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+                                                }`}
+                                                onClick={() => toggleScenarioSelection(idx)}
+                                            >
+                                                <div className="flex items-start">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedScenarios.has(idx)}
+                                                        onChange={() => toggleScenarioSelection(idx)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="w-4 h-4 mt-1 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mr-3"
+                                                    />
+                                                    <span className="text-blue-600 font-mono text-sm mr-2">{idx + 1}.</span>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-sm font-medium text-gray-800">{scenario.name}</p>
+                                                            {/* Match Status Badge */}
+                                                            {matchResults && (
+                                                                hasMatch ? (
+                                                                    <span className="px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded-full text-xs font-semibold flex items-center">
+                                                                        ⚠️ Similar Exists
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 bg-green-200 text-green-800 rounded-full text-xs font-semibold flex items-center">
+                                                                        ✓ New
+                                                                    </span>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {/* Show matching existing scenarios */}
+                                                        {hasMatch && (
+                                                            <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
+                                                                <div className="font-semibold text-yellow-800 mb-1">🔗 Similar to existing scenario(s):</div>
+                                                                {scenarioMatches.map((match, midx) => (
+                                                                    <div key={midx} className="flex items-center text-yellow-700 mt-1">
+                                                                        <span className="mr-2">→</span>
+                                                                        <span className="font-medium">{match.featureFile}:</span>
+                                                                        <span className="ml-1 italic truncate">{match.scenarioName}</span>
+                                                                        <span className="ml-2 px-1 py-0.5 bg-yellow-300 rounded text-yellow-900 font-semibold">
+                                                                            {match.matchRatio}% match
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Show source stories for Epic-consolidated scenarios */}
+                                                        {scenario.sourceStories && scenario.sourceStories.length > 0 && (
+                                                            <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded text-xs">
+                                                                <div className="font-semibold text-purple-700 mb-1">📦 Consolidated from:</div>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {scenario.sourceStories.map((source, sidx) => (
+                                                                        <span key={sidx} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded" title={source.summary}>
+                                                                            {source.key}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {scenario.tags && (
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {scenario.tags.map((tag, tidx) => (
+                                                                    <span key={tidx} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                                                        {tag}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {/* Show steps preview */}
+                                                        {scenario.steps && scenario.steps.length > 0 && (
+                                                            <div className="mt-2 text-xs text-gray-500 font-mono bg-white rounded p-2 border border-gray-100">
+                                                                {scenario.steps.slice(0, 3).map((step, sidx) => (
+                                                                    <div key={sidx} className="truncate">
+                                                                        <span className={`font-semibold ${
+                                                                            step.keyword === 'Given' ? 'text-purple-600' :
+                                                                            step.keyword === 'When' ? 'text-blue-600' :
+                                                                            step.keyword === 'Then' ? 'text-green-600' :
+                                                                            'text-gray-600'
+                                                                        }`}>{step.keyword}</span> {step.text}
+                                                                    </div>
+                                                                ))}
+                                                                {scenario.steps.length > 3 && (
+                                                                    <div className="text-gray-400 italic">...and {scenario.steps.length - 3} more steps</div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )})}
+                                    </div>
+
+                                    {/* Warning if no scenarios selected */}
+                                    {selectedScenarios.size === 0 && (
+                                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                                            ⚠️ No scenarios selected. Please select at least one scenario to save.
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Match Results Summary */}
+                                {matchResults && (
+                                    <div className={`rounded-xl shadow-md p-6 mb-6 ${matchResults.hasMatches ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                                        <h3 className="text-lg font-bold mb-3 flex items-center justify-between">
+                                            <div className="flex items-center">
+                                                {matchResults.hasMatches ? (
+                                                    <>
+                                                        <span className="text-yellow-600 mr-2">⚠️</span>
+                                                        <span className="text-yellow-800">Similarity Check Complete</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-green-600 mr-2">✅</span>
+                                                        <span className="text-green-800">All Scenarios are New</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </h3>
+                                        
+                                        {matchResults.hasMatches && matchResults.matches ? (
+                                            <div>
+                                                {/* Summary Stats */}
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="flex items-center px-3 py-2 bg-green-100 rounded-lg">
+                                                        <span className="text-green-600 font-bold text-lg mr-2">
+                                                            {generatedScenarios.length - [...new Set(matchResults.matches.map(m => m.newScenario))].length}
+                                                        </span>
+                                                        <span className="text-green-700 text-sm">New Scenarios</span>
+                                                    </div>
+                                                    <div className="flex items-center px-3 py-2 bg-yellow-100 rounded-lg">
+                                                        <span className="text-yellow-600 font-bold text-lg mr-2">
+                                                            {[...new Set(matchResults.matches.map(m => m.newScenario))].length}
+                                                        </span>
+                                                        <span className="text-yellow-700 text-sm">Similar to Existing</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <p className="text-sm text-yellow-700 mb-3">
+                                                    💡 <strong>Tip:</strong> Scenarios with similar matches are highlighted in yellow above. 
+                                                    You may want to uncheck them to avoid duplicates, or keep them if they have different steps.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-green-700">
+                                                ✨ Great! All generated scenarios appear to be new and don't have similar existing test cases.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Save Options */}
+                                <div className="bg-white rounded-xl shadow-md p-6">
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4">💾 Save Scenarios</h3>
+                                    
+                                    {/* Smart Mode Toggle */}
+                                    <div className="mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                        <label className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={useSmartMode}
+                                                onChange={(e) => setUseSmartMode(e.target.checked)}
+                                                className="mr-3 w-5 h-5 text-indigo-600"
+                                            />
+                                            <div>
+                                                <span className="font-semibold text-indigo-800">🧠 Smart Mode</span>
+                                                <p className="text-xs text-indigo-600">Intelligently extend existing scenarios instead of always creating new ones</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    
+                                    {/* Module Selection */}
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            Select Target Module
+                                        </label>
+                                        <select
+                                            value={selectedModule}
+                                            onChange={(e) => {
+                                                setSelectedModule(e.target.value);
+                                                setSmartAnalysis(null); // Reset analysis when module changes
+                                            }}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                        >
+                                            <option value="">Select a module...</option>
+                                            {modules.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    {/* Smart Analysis Section */}
+                                    {useSmartMode && selectedModule && (
+                                        <div className="mb-4">
+                                            <button
+                                                onClick={handleSmartAnalysis}
+                                                disabled={analyzingScenarios}
+                                                className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-all font-semibold flex items-center justify-center space-x-2"
+                                            >
+                                                {analyzingScenarios ? (
+                                                    <>
+                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        <span>Analyzing existing scenarios...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>🔍</span>
+                                                        <span>Analyze & Recommend Best Approach</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                            
+                                            {/* Smart Analysis Results */}
+                                            {smartAnalysis && smartAnalysis.success && (
+                                                <div className="mt-4 space-y-3">
+                                                    {/* Recommendations Summary */}
+                                                    <div className="bg-gray-50 rounded-lg p-4">
+                                                        <h4 className="font-semibold text-gray-800 mb-2">📊 Analysis Results</h4>
+                                                        <p className="text-xs text-gray-600 mb-2">
+                                                            Found {smartAnalysis.existingScenariosCount || 0} existing scenarios in {smartAnalysis.targetFile}
+                                                        </p>
+                                                        
+                                                        {smartAnalysis.recommendations && smartAnalysis.recommendations.map((rec, idx) => (
+                                                            <div key={idx} className={`text-sm py-1 px-2 rounded mb-1 ${
+                                                                rec.type === 'suggestion' ? 'bg-blue-100 text-blue-800' :
+                                                                rec.type === 'info' ? 'bg-yellow-100 text-yellow-800' :
+                                                                'bg-green-100 text-green-800'
+                                                            }`}>
+                                                                {rec.type === 'suggestion' && '💡'} 
+                                                                {rec.type === 'info' && 'ℹ️'} 
+                                                                {rec.type === 'new' && '✨'} {rec.message}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    {/* Scenarios to Extend */}
+                                                    {smartAnalysis.extendExisting && smartAnalysis.extendExisting.length > 0 && (
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                            <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+                                                                <span className="mr-2">📝</span>
+                                                                Extend Existing Scenarios ({smartAnalysis.extendExisting.length})
+                                                            </h4>
+                                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                                {smartAnalysis.extendExisting.map((ext, idx) => (
+                                                                    <div key={idx} className="bg-white p-2 rounded text-sm">
+                                                                        <div className="font-medium text-blue-700">
+                                                                            Add to: "{ext.targetScenario.name}"
+                                                                        </div>
+                                                                        <div className="text-gray-600 text-xs mt-1">
+                                                                            + {ext.additionalSteps.length} step(s): {ext.additionalSteps.map(s => s.text).join(', ')}
+                                                                        </div>
+                                                                        <div className="text-blue-600 text-xs">{ext.reason}</div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* New Scenarios */}
+                                                    {smartAnalysis.newScenarios && smartAnalysis.newScenarios.length > 0 && (
+                                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                                            <h4 className="font-semibold text-green-800 mb-2 flex items-center">
+                                                                <span className="mr-2">✨</span>
+                                                                New Scenarios ({smartAnalysis.newScenarios.length})
+                                                            </h4>
+                                                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                                                                {smartAnalysis.newScenarios.map((s, idx) => (
+                                                                    <div key={idx} className="text-sm text-green-700 bg-white p-1 rounded">
+                                                                        {s.name}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Skipped Duplicates */}
+                                                    {smartAnalysis.skipDuplicates && smartAnalysis.skipDuplicates.length > 0 && (
+                                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                                            <h4 className="font-semibold text-yellow-800 mb-2 flex items-center">
+                                                                <span className="mr-2">⏭️</span>
+                                                                Skipped - Already Covered ({smartAnalysis.skipDuplicates.length})
+                                                            </h4>
+                                                            <div className="space-y-1 max-h-24 overflow-y-auto">
+                                                                {smartAnalysis.skipDuplicates.map((s, idx) => (
+                                                                    <div key={idx} className="text-xs text-yellow-700">
+                                                                        <span className="font-medium">{s.scenario.name}</span>
+                                                                        <span className="text-yellow-600"> - {s.reason}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Apply Button */}
+                                                    {(smartAnalysis.newScenarios?.length > 0 || smartAnalysis.extendExisting?.length > 0) && (
+                                                        <button
+                                                            onClick={handleApplySmartRecommendations}
+                                                            disabled={saving}
+                                                            className="w-full vulcan-button px-4 py-3 rounded-lg font-semibold flex items-center justify-center space-x-2"
+                                                        >
+                                                            {saving ? (
+                                                                <>
+                                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                                    <span>Applying changes...</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span>🚀</span>
+                                                                    <span>Apply Smart Recommendations</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Manual Options (when Smart Mode is off) */}
+                                    {!useSmartMode && (
+                                        <>
+                                            {/* Option 1: Add to Existing */}
+                                            <div className="mb-6 pb-6 border-b border-gray-200">
+                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                    Option 1: Add Selected to Existing Feature File
+                                                </label>
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={handleAddToExisting}
+                                                        className="vulcan-button px-4 py-2 rounded-lg font-semibold"
+                                                        disabled={!selectedModule || saving || selectedScenarios.size === 0}
+                                                    >
+                                                        {saving ? 'Saving...' : `Add ${selectedScenarios.size} Scenario${selectedScenarios.size !== 1 ? 's' : ''} to File`}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Option 2: Create New */}
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                                    Option 2: Create New Feature File
+                                                </label>
+                                                <div className="flex space-x-2">
+                                                    <input
+                                                        type="text"
+                                                        value={newFeatureFileName}
+                                                        onChange={(e) => setNewFeatureFileName(e.target.value)}
+                                                        placeholder="e.g., new-checkout-flow"
+                                                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                                                    />
+                                                    <span className="self-center text-gray-500">.feature</span>
+                                                    <button
+                                                        onClick={handleCreateNewFeature}
+                                                        className="vulcan-button px-4 py-2 rounded-lg font-semibold"
+                                                        disabled={!newFeatureFileName.trim() || saving || selectedScenarios.size === 0}
+                                                    >
+                                                        {saving ? 'Creating...' : `Create with ${selectedScenarios.size} Scenario${selectedScenarios.size !== 1 ? 's' : ''}`}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Save Result */}
+                                    {saveResult && (
+                                        <div className={`mt-4 p-4 rounded-lg ${saveResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                            {saveResult.success ? (
+                                                <div className="text-green-800">
+                                                    <span className="font-semibold">✅ Success!</span>
+                                                    <p className="text-sm mt-1">{saveResult.message}</p>
+                                                    {saveResult.filePath && (
+                                                        <p className="text-xs text-green-600 mt-1">File: {saveResult.filePath}</p>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="text-red-800">
+                                                    <span className="font-semibold">❌ Error</span>
+                                                    <p className="text-sm mt-1">{saveResult.error}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Step Definition Section - Show after successful save */}
+                                    {saveResult && saveResult.success && (
+                                        <div className="mt-6 bg-white rounded-xl shadow-md p-6">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                                <span className="mr-2">📋</span> Step Definitions
+                                            </h3>
+                                            
+                                            {/* Check Step Definitions Button */}
+                                            <button
+                                                onClick={handleCheckStepDefinitions}
+                                                disabled={checkingStepDefs}
+                                                className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-all font-semibold flex items-center justify-center space-x-2"
+                                            >
+                                                {checkingStepDefs ? (
+                                                    <>
+                                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        <span>Analyzing Step Definitions...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>🔍</span>
+                                                        <span>Check Existing Step Definitions</span>
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* Step Definition Results */}
+                                            {stepDefResults && (
+                                                <div className="mt-4">
+                                                    {/* Existing Steps */}
+                                                    {stepDefResults.foundSteps && stepDefResults.foundSteps.length > 0 && (
+                                                        <div className="mb-4">
+                                                            <h4 className="text-sm font-semibold text-green-700 mb-2 flex items-center">
+                                                                <span className="mr-1">✅</span> Existing Step Definitions ({stepDefResults.foundSteps.length})
+                                                            </h4>
+                                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                                                {stepDefResults.foundSteps.map((step, idx) => (
+                                                                    <div key={idx} className="text-xs text-green-800 py-1 border-b border-green-100 last:border-b-0">
+                                                                        <code>{step.step}</code>
+                                                                        <span className="text-green-600 ml-2 text-xs">→ {step.file}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Missing Steps */}
+                                                    {stepDefResults.missingSteps && stepDefResults.missingSteps.length > 0 && (
+                                                        <div className="mb-4">
+                                                            <h4 className="text-sm font-semibold text-orange-700 mb-2 flex items-center">
+                                                                <span className="mr-1">⚠️</span> Missing Step Definitions ({stepDefResults.missingSteps.length})
+                                                            </h4>
+                                                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+                                                                {stepDefResults.missingSteps.map((step, idx) => (
+                                                                    <div key={idx} className="text-xs text-orange-800 py-1 border-b border-orange-100 last:border-b-0">
+                                                                        <code>{step.step}</code>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Generate Step Definitions Button */}
+                                                            <button
+                                                                onClick={handleGenerateStepDefinitions}
+                                                                disabled={generatingStepDefs}
+                                                                className="mt-3 w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-all font-semibold flex items-center justify-center space-x-2"
+                                                            >
+                                                                {generatingStepDefs ? (
+                                                                    <>
+                                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                                        <span>Generating Code...</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span>⚡</span>
+                                                                        <span>Generate Missing Step Definitions</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    )}
+
+                                                    {/* All steps exist message */}
+                                                    {stepDefResults.missingSteps && stepDefResults.missingSteps.length === 0 && (
+                                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                                                            <span className="text-2xl">🎉</span>
+                                                            <p className="text-green-700 font-semibold mt-1">All step definitions already exist!</p>
+                                                            <p className="text-green-600 text-sm">Your scenarios are ready to run.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Generated Step Definition Code */}
+                                            {generatedStepDefs && generatedStepDefs.success && (
+                                                <div className="mt-4">
+                                                    <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                                                        <span className="mr-1">📝</span> Generated Step Definition Code
+                                                    </h4>
+                                                    <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                                                        <pre className="text-xs text-green-400 whitespace-pre-wrap font-mono">{generatedStepDefs.code}</pre>
+                                                    </div>
+                                                    <div className="mt-3 flex space-x-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(generatedStepDefs.code);
+                                                                alert('Code copied to clipboard!');
+                                                            }}
+                                                            className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-all text-sm font-semibold"
+                                                        >
+                                                            📋 Copy Code
+                                                        </button>
+                                                    </div>
+                                                    <p className="mt-2 text-xs text-gray-500">
+                                                        Add this code to: <code className="bg-gray-100 px-1 rounded">Ecomm/features/step_definitions/{generatedStepDefs.fileName}</code>
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                                <div className="text-6xl mb-4">✨</div>
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">No Scenarios Yet</h3>
+                                <p className="text-gray-500 text-sm">
+                                    Enter a Jira story, epic, or filter on the left to generate test scenarios
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         // ============ DEFECT LOGGER TAB COMPONENT ============
         function DefectLoggerTab() {
             const [formData, setFormData] = useState({
@@ -2388,6 +3444,10 @@
 
                             {activeTab === 'ai' && (
                                 <AICommanderTab />
+                            )}
+
+                            {activeTab === 'ai-features' && (
+                                <AIFeatureGeneratorTab />
                             )}
 
                             {activeTab === 'defects' && (

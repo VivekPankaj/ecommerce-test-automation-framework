@@ -24,3 +24,14 @@ screenshot*.png
 # Temporary files
 test_output*.txt
 state.json
+
+# macOS
+.DS_Store
+*.DS_Store
+
+# Reports (generated)
+reports/
+regression_run.log
+
+# IDE
+.idea/

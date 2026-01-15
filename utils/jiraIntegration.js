@@ -269,6 +269,72 @@ class JiraIntegration {
         }
         return null;
     }
+
+    /**
+     * Get a single Jira issue by key
+     */
+    async getIssue(issueKey) {
+        try {
+            // Fetch all fields to capture custom fields like Acceptance Criteria
+            const response = await this.jiraClient.get(`/rest/api/3/issue/${issueKey}`, {
+                params: {
+                    expand: 'names,renderedFields'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching issue ${issueKey}:`, error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Search Jira issues by JQL
+     */
+    async searchIssues(jql, maxResults = 50) {
+        try {
+            const response = await this.jiraClient.post('/rest/api/3/search/jql', {
+                jql: jql,
+                maxResults: maxResults,
+                fields: ['*all'],
+                expand: ['names', 'renderedFields']
+            });
+            return response.data.issues || [];
+        } catch (error) {
+            console.error('Error searching issues:', error.message);
+            // Try fallback with v2 API
+            try {
+                const fallbackResponse = await this.jiraClient.post('/rest/api/2/search', {
+                    jql: jql,
+                    maxResults: maxResults,
+                    fields: ['*all']
+                });
+                return fallbackResponse.data.issues || [];
+            } catch (fallbackError) {
+                console.error('Fallback search also failed:', fallbackError.message);
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * Get child issues of an Epic using Agile API
+     * This is the most reliable way to find stories linked to an Epic
+     */
+    async getEpicChildren(epicKey, maxResults = 100) {
+        try {
+            const response = await this.jiraClient.get(`/rest/agile/1.0/epic/${epicKey}/issue`, {
+                params: {
+                    maxResults: maxResults,
+                    fields: 'summary,issuetype,status,description,customfield_10474'
+                }
+            });
+            return response.data.issues || [];
+        } catch (error) {
+            console.error(`Error fetching children of Epic ${epicKey}:`, error.message);
+            return [];
+        }
+    }
 }
 
 module.exports = JiraIntegration;

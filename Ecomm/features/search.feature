@@ -44,6 +44,7 @@ Feature: Search Functionality Validation
     Then I should see search results
     And the URL should contain "/search"
     And the header should display "Results for" and the search keyword "<query>"
+    And I should see the following components similar to PLP in line with ECM -54  # Added from ECM-83
 
     Examples:
       | query          | description                     |
@@ -57,6 +58,10 @@ Feature: Search Functionality Validation
     Then I should see autocomplete suggestions
     When I click the first autocomplete suggestion
     Then I should be redirected to a relevant page
+    And I am displayed product suggestions  # Added from ECM-83
+    And I should be taken directly to that product’s PDP  # Added from ECM-83
+    And I am displayed category suggestions  # Added from ECM-83
+    And I should be taken to the category PLP.  # Added from ECM-83
 
   @P2 @CrossPage @SearchFromPLP
   Scenario: Search works from Product Listing Page
@@ -104,6 +109,7 @@ Feature: Search Functionality Validation
     Then I should be able to focus the search icon
     When I press "Enter" key on the search icon
     Then the search input should be visible and focused
+    And it should trigger a full search and display the SRP.  # Added from ECM-83
 
   @P2 @CrossPage @SearchFromPDP @skip @future
   Scenario: Search works from Product Detail Page
@@ -118,3 +124,11 @@ Feature: Search Functionality Validation
     When I search for "gravel"
     Then I should see search results
     And the URL should contain "/search"
+
+  # ========== New Scenarios from ECM-83 ==========
+  @Regression @Search @P2 @ECM-83
+  Scenario: Verify Am on SRP
+    # Source: ECM-83
+    Given I entered a search term in the Search Box
+    When I am on SRP
+    Then I should see a Header with the title
