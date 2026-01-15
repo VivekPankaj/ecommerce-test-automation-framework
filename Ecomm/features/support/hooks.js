@@ -14,9 +14,10 @@ Before(async function (scenario) {
     }
 
     const browserName = process.env.BROWSER || 'chromium';  // Set Chromium as default browser
+    const isHeadless = process.env.HEADLESS === 'true';  // Respect HEADLESS env variable
     const browserType = { chromium, firefox, webkit }[browserName] || chromium;
     this.browser = await browserType.launch({
-      headless: false,
+      headless: isHeadless,
       args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-web-security']  // Added args to prevent common timeout issues
     });
     // Create a browser context with a fixed geolocation so tests that depend on location
